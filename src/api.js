@@ -814,6 +814,8 @@ export class NansenAPI {
   }
 
   async addressPnlSummary(params = {}) {
+    // Note: pnl-summary endpoint is non-paginated (returns aggregate stats, not a list).
+    // Pagination param intentionally omitted from this request.
     const { address, chain = 'ethereum', orderBy, days = 30 } = params;
     if (address) {
       const validation = validateAddress(address, chain);
