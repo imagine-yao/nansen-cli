@@ -16,7 +16,6 @@ import {
   parseSort,
   buildCommands,
   runCLI,
-  NO_AUTH_COMMANDS,
   DEPRECATED_TO_RESEARCH,
   DEPRECATED_TO_TRADE,
   HELP,
@@ -264,14 +263,6 @@ describe('HELP', () => {
     expect(HELP).toContain('schema');
     expect(HELP).toContain('login');
     expect(HELP).toContain('logout');
-  });
-});
-
-describe('NO_AUTH_COMMANDS', () => {
-  it('should include login, logout, help', () => {
-    expect(NO_AUTH_COMMANDS).toContain('login');
-    expect(NO_AUTH_COMMANDS).toContain('logout');
-    expect(NO_AUTH_COMMANDS).toContain('help');
   });
 });
 
@@ -1204,9 +1195,6 @@ describe('schema command', () => {
     expect(output).toContain('\n'); // Pretty JSON has newlines
   });
 
-  it('should be in NO_AUTH_COMMANDS', () => {
-    expect(NO_AUTH_COMMANDS).toContain('schema');
-  });
 });
 
 // =================== Field Filtering ===================
@@ -1477,10 +1465,6 @@ describe('Response Caching', () => {
 });
 
 describe('cache command', () => {
-  it('should be in NO_AUTH_COMMANDS', () => {
-    expect(NO_AUTH_COMMANDS).toContain('cache');
-  });
-
   it('should clear cache with clear subcommand', async () => {
     const logs = [];
     const mockDeps = {
@@ -2432,7 +2416,7 @@ describe('deprecation warnings', () => {
     // quote with no args shows its help; confirms handler was reached
     const result = await runCLI(['quote'], deps);
     expect(errors.some(e => e.includes('nansen trade quote'))).toBe(true);
-    expect(result.type).toBe('no-auth');
+    expect(result.type).toBe('no-output');
   });
 });
 
