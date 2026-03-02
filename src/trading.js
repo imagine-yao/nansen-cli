@@ -776,12 +776,17 @@ export function buildTradingCommands(deps = {}) {
         errorOutput(`
 Usage: nansen trade quote --chain <chain> --from <token> --to <token> --amount <baseUnits>
 
+PREREQUISITE:
+  A wallet must be configured before using this command (the trading API builds
+  a transaction specific to your sender address).
+  Set one up with: nansen wallet create
+
 OPTIONS:
   --chain <chain>           Chain: solana, base
   --from <symbol|address>   Input token (symbol like SOL, USDC or address)
   --to <symbol|address>     Output token (symbol like USDC, ETH or address)
   --amount <units>          Amount in BASE UNITS (e.g. lamports, wei)
-  --wallet <name>           Wallet name (default: default wallet)
+  --wallet <name>           Wallet name (default: default wallet). Use "walletconnect" or "wc" for WalletConnect (EVM only).
   --slippage <pct>          Slippage as decimal (e.g. 0.03 for 3%). Default: 0.03
   --auto-slippage           Enable auto slippage calculation
   --max-auto-slippage <pct> Max auto slippage when auto-slippage enabled
