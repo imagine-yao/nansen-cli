@@ -702,6 +702,24 @@ describe('NansenAPI', () => {
         const diffDays = Math.round((to - from) / (1000 * 60 * 60 * 24));
         expect(diffDays).toBe(14);
       });
+
+      it('should send per_page (not recordsPerPage) when limit is specified', async () => {
+        setupMock(MOCK_RESPONSES.addressCounterparties);
+
+        await api.addressCounterparties({
+          address: TEST_DATA.ethereum.address,
+          chain: 'ethereum',
+          pagination: { page: 1, per_page: 5 }
+        });
+
+        const body = expectFetchCalledWith('/api/v1/profiler/address/counterparties');
+        // Assert correct pagination field name used by the API
+        expect(body.pagination).toBeDefined();
+        expect(body.pagination.per_page).toBe(5);
+        expect(body.pagination.page).toBe(1);
+        // Assert the legacy field name is NOT used
+        expect(body.pagination.recordsPerPage).toBeUndefined();
+      });
     });
 
     describe('addressPnlSummary', () => {
