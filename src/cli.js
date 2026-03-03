@@ -976,13 +976,25 @@ export function buildCommands(deps = {}) {
           return traceCounterparties(apiInstance, { address, chain, depth, width, days, delayMs });
         },
         'compare': () => {
-          const addrs = (options.addresses || '').split(',').map(a => a.trim()).filter(Boolean);
+          const rawAddresses = options.addresses;
+          let addrs;
+          if (Array.isArray(rawAddresses)) {
+            addrs = rawAddresses.map(a => String(a).trim()).filter(Boolean);
+          } else {
+            const s = rawAddresses || '';
+            try {
+              const parsed = JSON.parse(s);
+              addrs = Array.isArray(parsed) ? parsed.map(a => String(a).trim()).filter(Boolean) : s.split(',').map(a => a.trim()).filter(Boolean);
+            } catch {
+              addrs = s.split(',').map(a => a.trim()).filter(Boolean);
+            }
+          }
           return compareWallets(apiInstance, { addresses: addrs, chain, days });
         },
         'help': () => ({
           commands: ['balance', 'labels', 'transactions', 'pnl', 'search', 'historical-balances', 'related-wallets', 'counterparties', 'pnl-summary', 'perp-positions', 'perp-trades', 'batch', 'trace', 'compare'],
           description: 'Wallet profiling endpoints',
-          example: 'nansen profiler balance --address 0x123... --chain ethereum'
+          example: 'nansen research profiler compare --addresses "0xABC...,0xDEF..." --chain ethereum'
         })
       };
 
