@@ -127,8 +127,6 @@
     "to_date": null,
     "only_new_positions": "only-new-positions",
     "market_id": "market-id",
-    "token_id": "token-id",
-    "event_id": "event-id",
     "token_symbol": "symbol"
   },
   "preserve": {
