@@ -61,9 +61,17 @@ nansen research profiler trace --address <addr> --chain ethereum --depth 2 --wid
 
 ```
 seed → steps 1-3 → new addresses found?
-  YES → run steps 1-3 on each new address → add to cluster if High/Medium confidence
+  YES → present findings to human, ask: "Found <addr> via <signal>. Want me to query it?"
+        human confirms → run steps 1-3 on that address → add to cluster if High/Medium confidence
+        human skips   → note it, move on
   NO  → stop expanding, proceed to steps 4-7 to profile the full cluster
 ```
+
+Always pause and ask the human before querying each new address. Show:
+- The address found
+- How it was found (First Funder / counterparty / trace hop)
+- Its label if available
+- Why it looks interesting (volume, relationship type)
 
 Stop expanding when:
 - New address is a known protocol/contract (Aave, Uniswap, CEX, etc.)
