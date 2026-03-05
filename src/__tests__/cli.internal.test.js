@@ -2334,7 +2334,7 @@ describe('batchProfile', () => {
   it('should call labels and balance for each address', async () => {
     const mockApi = {
       addressLabels: vi.fn().mockResolvedValue({ labels: ['Fund'] }),
-      addressBalance: vi.fn().mockResolvedValue({ balances: [{ token_symbol: 'ETH', balance_usd: 100 }] }),
+      addressBalance: vi.fn().mockResolvedValue({ balances: [{ token_symbol: 'ETH', value_usd: 100 }] }),
     };
 
     const result = await batchProfile(mockApi, {
