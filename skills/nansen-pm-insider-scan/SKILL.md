@@ -30,20 +30,20 @@ nansen research profiler labels --address $OWNER --chain polygon
 # → label, category
 ```
 
-For each winner, compute ROI = total_pnl_usd / net_buy_cost_usd * 100, then score (0–13):
+For each winner, compute ROI = total_pnl_usd / net_buy_cost_usd * 100 (skip ROI flags if net_buy_cost_usd <= 0), then score (0–13). Within each tier group, apply only the highest matching flag:
 
 | Flag | Pts | Trigger |
 |---|---|---|
 | NEW_WALLET | 3 | First funded within 7 days of now |
-| YOUNG_WALLET | 1 | First funded within 28 days |
+| YOUNG_WALLET | 1 | First funded 8–28 days ago (skip if NEW_WALLET fires) |
 | SINGLE_MARKET | 3 | trades-by-address shows only 1 distinct market_id |
-| FEW_MARKETS | 1 | 2–3 distinct market_ids |
+| FEW_MARKETS | 1 | 2–3 distinct market_ids (skip if SINGLE_MARKET fires) |
 | EXTREME_ROI | 3 | ROI >= 500% |
-| HIGH_ROI | 2 | ROI >= 200% |
+| HIGH_ROI | 2 | ROI 200–499% (skip if EXTREME_ROI fires) |
 | LATE_ENTRY | 2 | Any trade on this market at price >= 0.80 |
 | LARGE_POSITION | 2 | net_buy_cost_usd >= $10k |
 | KNOWN_ENTITY | -2 | Has Nansen labels |
 
 Flagged at score >= 3. High risk at >= 7. High-confidence suspicious pattern: NEW_WALLET + SINGLE_MARKET + EXTREME_ROI (score 9+).
 
-If owner_address is invalid (e.g. "0x"), use the proxy address for profiler calls too. Pause ~1.5s between wallets to avoid rate limits. Skip wallets that error and continue scanning.
+If owner_address is invalid (e.g. "0x"), use the proxy address for profiler calls too. If historical-balances returns no records with value_usd > 0, the wallet may predate the 365-day window — treat wallet age as unknown and skip NEW_WALLET / YOUNG_WALLET flags. Pause ~1.5s between wallets to avoid rate limits. Skip wallets that error and continue scanning.
