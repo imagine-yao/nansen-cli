@@ -26,10 +26,18 @@ On confirm, re-run steps 1-2 on it. Reserve step 3 (counterparties) for the seed
 
 `address` · `owner` · `confidence (H/M/L)` · `signals` · `role`
 
+## L2 Coverage
+
+When step 3 returns sparse results on a mainnet EVM address, extend to L2s (4 calls):
+
+```bash
+for CHAIN in base arbitrum optimism polygon; do
+  nansen research profiler counterparties --address $ADDR --chain $CHAIN --days 365
+done
+```
+
 ## Cost Warnings
 
 - `trace` is credit-heavy; keep `--width 3` or lower
-- L2 counterparty checks add 4 API calls per address:
-  `nansen research profiler counterparties --address $ADDR --chain base --days 365`
-  (repeat for arbitrum, optimism, polygon)
+- L2 counterparty checks above add 4 API calls per address
 - Historical balances reveal past holdings on drained wallets — useful fingerprint
