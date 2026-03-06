@@ -152,18 +152,12 @@ describe('scheduleUpdateCheck', () => {
     backupCache();
     delete process.env.NO_UPDATE_NOTIFIER;
     delete process.env.CI;
-    // Mock spawn to prevent real network requests. Without this, the stale and
-    // missing-cache tests spawn a detached child process that hits registry.npmjs.org
-    // and can overwrite the cache file mid-way through a subsequent CLI integration
-    // test, causing a race condition that makes the update notification assertion fail.
-    vi.spyOn(childProcess, 'spawn').mockReturnValue({ unref: vi.fn() });
 
     const mod = await import('../update-check.js');
     scheduleUpdateCheck = mod.scheduleUpdateCheck;
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     restoreCache();
   });
 
@@ -189,12 +183,20 @@ describe('scheduleUpdateCheck', () => {
 
   it('should not throw when cache is stale', () => {
     writeCache({ latest: '1.3.0', checkedAt: Date.now() - 25 * 60 * 60 * 1000 });
+    // Spy inline to prevent a real network spawn from writing to the shared cache
+    // file during subsequent CLI integration tests (race condition). Restoring
+    // immediately after keeps the spy scoped to this test only.
+    const spawnSpy = vi.spyOn(childProcess, 'spawn').mockReturnValue({ unref: vi.fn() });
     expect(() => scheduleUpdateCheck()).not.toThrow();
+    spawnSpy.mockRestore();
   });
 
   it('should not throw when no cache exists', () => {
     removeCache();
+    // Same race condition guard as the stale test above.
+    const spawnSpy = vi.spyOn(childProcess, 'spawn').mockReturnValue({ unref: vi.fn() });
     expect(() => scheduleUpdateCheck()).not.toThrow();
+    spawnSpy.mockRestore();
   });
 
   it('should not throw when cache is invalid JSON', () => {
