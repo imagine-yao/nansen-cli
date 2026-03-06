@@ -27,4 +27,6 @@ nansen research profiler historical-balances --address $ADDR --chain $CHAIN --da
 nansen research profiler trace --address $ADDR --chain $CHAIN --depth 2 --width 3
 ```
 
-See REFERENCE.md for expansion protocol, attribution rules, and confidence scoring.
+**Expansion:** Run steps 1-2 on seed. For each new address found, ask the human before querying. Reserve step 3 for seed only.
+**Stop when:** known protocol/CEX · Low confidence · already visited · cluster > 10 wallets.
+Attribution rules and confidence scoring in REFERENCE.md.
