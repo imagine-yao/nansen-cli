@@ -17,7 +17,7 @@ nansen research token indicators --token $TOKEN --chain $CHAIN
 # → risk_indicators, reward_indicators (each with score, signal, signal_percentile)
 
 nansen research token flow-intelligence --token $TOKEN --chain $CHAIN
-# → net_flow_usd and wallet_count per label: smart_trader, whale, exchange, fresh_wallets, public_figure
+# → net_flow_usd, avg_flow_usd, wallet_count per label: smart_trader, top_pnl, whale, exchange, fresh_wallets, public_figure
 
 nansen research token holders --token $TOKEN --chain $CHAIN --smart-money --limit 20
 # → address, address_label, value_usd, ownership_percentage, balance_change_24h/7d/30d
