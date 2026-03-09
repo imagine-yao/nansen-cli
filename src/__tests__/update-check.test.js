@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import childProcess from 'child_process';
 
 // We need to test with a controlled cache file, so we'll write to
 // the real ~/.nansen/update-check.json and clean up after.
@@ -182,12 +183,20 @@ describe('scheduleUpdateCheck', () => {
 
   it('should not throw when cache is stale', () => {
     writeCache({ latest: '1.3.0', checkedAt: Date.now() - 25 * 60 * 60 * 1000 });
+    // Spy inline to prevent a real network spawn from writing to the shared cache
+    // file during subsequent CLI integration tests (race condition). Restoring
+    // immediately after keeps the spy scoped to this test only.
+    const spawnSpy = vi.spyOn(childProcess, 'spawn').mockReturnValue({ unref: vi.fn() });
     expect(() => scheduleUpdateCheck()).not.toThrow();
+    spawnSpy.mockRestore();
   });
 
   it('should not throw when no cache exists', () => {
     removeCache();
+    // Same race condition guard as the stale test above.
+    const spawnSpy = vi.spyOn(childProcess, 'spawn').mockReturnValue({ unref: vi.fn() });
     expect(() => scheduleUpdateCheck()).not.toThrow();
+    spawnSpy.mockRestore();
   });
 
   it('should not throw when cache is invalid JSON', () => {
