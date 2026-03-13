@@ -1,5 +1,5 @@
 ---
-"nansen": minor
+"nansen-cli": minor
 ---
 
 feat: add `nansen web-search` and `nansen web-fetch` commands (ECINT-6393)
