@@ -1,6 +1,19 @@
 ---
 name: nansen-portfolio-history
 description: "How has a wallet's portfolio changed over time? Historical balances, current snapshot, and per-token PnL."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # Portfolio History

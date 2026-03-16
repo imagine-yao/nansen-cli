@@ -1,6 +1,19 @@
 ---
 name: nansen-batch-wallet
 description: "Which of these addresses are smart money? Batch-profile a list in one call."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 ```bash
 ADDRESSES="0xaddr1,0xaddr2,0xaddr3,..." CHAIN=ethereum

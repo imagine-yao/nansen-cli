@@ -1,6 +1,19 @@
 ---
 name: nansen-exit-signal
 description: "Is smart money exiting a token I hold? Net flow direction, seller breakdown by label, and recent SM trades."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # Exit Signal

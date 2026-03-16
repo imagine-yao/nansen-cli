@@ -1,6 +1,19 @@
 ---
 name: nansen-dca-watch
 description: "What tokens are whales dollar-cost averaging into? Jupiter DCA strategies by smart money and target token fundamentals."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # DCA Watch

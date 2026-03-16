@@ -1,6 +1,19 @@
 ---
 name: nansen-perp-trader
 description: "Deep dive on a Hyperliquid perp trader. Identity, open positions, recent trades, and overall PnL."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # Perp Trader
