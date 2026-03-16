@@ -3631,3 +3631,169 @@ describe('buildPagination', () => {
     expect(buildPagination({ limit: 25 })).toEqual({ page: 1, per_page: 25 });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// web command (search + fetch subcommands)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('web search subcommand', () => {
+  let webCmd;
+  let mockApi;
+
+  beforeEach(() => {
+    mockApi = {
+      webSearch: vi.fn().mockResolvedValue({ results: [] }),
+    };
+    const commands = buildCommands({ output: () => {}, errorOutput: () => {}, exit: () => {} });
+    webCmd = (args, options = {}) => commands['web'](['search', ...args], mockApi, {}, options);
+  });
+
+  it('passes a single positional arg as query', async () => {
+    await webCmd(['bitcoin price']);
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['bitcoin price'], numResults: undefined });
+  });
+
+  it('passes multiple positional args as multiple queries', async () => {
+    await webCmd(['bitcoin price', 'ethereum news']);
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['bitcoin price', 'ethereum news'], numResults: undefined });
+  });
+
+  it('passes --query flag as query', async () => {
+    await webCmd([], { query: 'solana defi' });
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['solana defi'], numResults: undefined });
+  });
+
+  it('merges positional args and --query flag', async () => {
+    await webCmd(['bitcoin'], { query: 'ethereum' });
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['bitcoin', 'ethereum'], numResults: undefined });
+  });
+
+  it('handles --query as an array (repeated flag)', async () => {
+    await webCmd([], { query: ['btc news', 'eth news'] });
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['btc news', 'eth news'], numResults: undefined });
+  });
+
+  it('passes --num-results as numResults (parsed as int)', async () => {
+    await webCmd(['bitcoin'], { 'num-results': '5' });
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['bitcoin'], numResults: 5 });
+  });
+
+  it('treats non-numeric --num-results as undefined (NaN guard)', async () => {
+    await webCmd(['bitcoin'], { 'num-results': 'abc' });
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['bitcoin'], numResults: undefined });
+  });
+
+  it('throws INVALID_PARAM when --num-results is 0 (out of range)', async () => {
+    await expect(webCmd(['bitcoin'], { 'num-results': '0' })).rejects.toThrow('--num-results must be between 1 and 20');
+  });
+
+  it('throws INVALID_PARAM when --num-results is 21 (out of range)', async () => {
+    await expect(webCmd(['bitcoin'], { 'num-results': '21' })).rejects.toThrow('--num-results must be between 1 and 20');
+  });
+
+  it('returns the API response', async () => {
+    const stub = { results: [{ query: 'bitcoin', organic: [] }] };
+    mockApi.webSearch.mockResolvedValue(stub);
+    const result = await webCmd(['bitcoin']);
+    expect(result).toEqual(stub);
+  });
+
+  it('throws MISSING_PARAM when no query provided', async () => {
+    await expect(webCmd([])).rejects.toThrow('At least one query is required');
+  });
+
+  it('filters out empty string queries', async () => {
+    await webCmd(['', 'bitcoin'], {});
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['bitcoin'], numResults: undefined });
+  });
+
+  it('throws MISSING_PARAM when all queries are empty/whitespace', async () => {
+    await expect(webCmd(['', '   '])).rejects.toThrow('At least one query is required');
+  });
+
+  it('filters out whitespace-only queries', async () => {
+    await webCmd(['  ', 'ethereum'], {});
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['ethereum'], numResults: undefined });
+  });
+});
+
+describe('web fetch subcommand', () => {
+  let webCmd;
+  let mockApi;
+
+  beforeEach(() => {
+    mockApi = {
+      webFetch: vi.fn().mockResolvedValue({ analysis: 'test', urls_requested: 1, retrieved_urls: [], failed_urls: [] }),
+    };
+    const commands = buildCommands({ output: () => {}, errorOutput: () => {}, exit: () => {} });
+    webCmd = (args, options = {}) => commands['web'](['fetch', ...args], mockApi, {}, options);
+  });
+
+  it('passes a single positional URL and --question', async () => {
+    await webCmd(['https://nansen.ai'], { question: 'What is this?' });
+    expect(mockApi.webFetch).toHaveBeenCalledWith({ urls: ['https://nansen.ai'], question: 'What is this?' });
+  });
+
+  it('passes multiple positional URLs', async () => {
+    await webCmd(['https://a.com', 'https://b.com'], { question: 'Compare?' });
+    expect(mockApi.webFetch).toHaveBeenCalledWith({ urls: ['https://a.com', 'https://b.com'], question: 'Compare?' });
+  });
+
+  it('passes --url flag as URL', async () => {
+    await webCmd([], { url: 'https://nansen.ai', question: 'What?' });
+    expect(mockApi.webFetch).toHaveBeenCalledWith({ urls: ['https://nansen.ai'], question: 'What?' });
+  });
+
+  it('handles --url as an array (repeated flag)', async () => {
+    await webCmd([], { url: ['https://a.com', 'https://b.com'], question: 'Compare?' });
+    expect(mockApi.webFetch).toHaveBeenCalledWith({ urls: ['https://a.com', 'https://b.com'], question: 'Compare?' });
+  });
+
+  it('merges positional URLs and --url flag', async () => {
+    await webCmd(['https://a.com'], { url: 'https://b.com', question: 'Diff?' });
+    expect(mockApi.webFetch).toHaveBeenCalledWith({ urls: ['https://a.com', 'https://b.com'], question: 'Diff?' });
+  });
+
+  it('returns the API response', async () => {
+    const stub = { analysis: 'Nansen is a blockchain analytics platform.', urls_requested: 1, retrieved_urls: ['https://nansen.ai'], failed_urls: [] };
+    mockApi.webFetch.mockResolvedValue(stub);
+    const result = await webCmd(['https://nansen.ai'], { question: 'What?' });
+    expect(result).toEqual(stub);
+  });
+
+  it('throws MISSING_PARAM when no URL provided', async () => {
+    await expect(webCmd([], { question: 'What?' })).rejects.toThrow('At least one URL is required');
+  });
+
+  it('throws MISSING_PARAM when --question is missing', async () => {
+    await expect(webCmd(['https://nansen.ai'])).rejects.toThrow('--question is required');
+  });
+
+  it('throws MISSING_PARAM when --question is blank/whitespace', async () => {
+    await expect(webCmd(['https://nansen.ai'], { question: '   ' })).rejects.toThrow('--question is required and cannot be blank');
+  });
+
+  it('throws INVALID_PARAMS when a URL has no scheme', async () => {
+    await expect(webCmd(['not-a-url'], { question: 'What?' })).rejects.toThrow('Invalid URL: "not-a-url"');
+  });
+
+  it('throws INVALID_PARAMS when a URL has no scheme (://bad)', async () => {
+    await expect(webCmd(['://bad'], { question: 'What?' })).rejects.toThrow('Invalid URL');
+  });
+
+  it('throws MISSING_PARAM when both URL and question are missing', async () => {
+    await expect(webCmd([])).rejects.toThrow('At least one URL is required');
+  });
+});
+
+describe('web help subcommand', () => {
+  it('returns available subcommands', async () => {
+    const commands = buildCommands({ output: () => {}, errorOutput: () => {}, exit: () => {} });
+    const result = await commands['web']([], {}, {}, {});
+    expect(result).toMatchObject({ subcommands: ['search', 'fetch'] });
+  });
+
+  it('throws for unknown web subcommand', async () => {
+    const commands = buildCommands({ output: () => {}, errorOutput: () => {}, exit: () => {} });
+    await expect(commands['web'](['unknown'], {}, {}, {})).rejects.toThrow('Unknown web subcommand');
+  });
+});
