@@ -683,8 +683,7 @@ COMMANDS:
   trade       quote, execute
   wallet      create, list, show, export, default, delete, forget-password
   alerts      list, create, update, toggle, delete
-  web-search  Search the web for one or more queries
-  web-fetch   Fetch and analyze URL content using AI
+  web         search, fetch
   account     Show API key status, plan, and remaining credits
   login       Save API key (--api-key <key> or NANSEN_API_KEY env var)
   logout      Remove saved API key
@@ -779,37 +778,68 @@ export function buildCommands(deps = {}) {
       return apiInstance.getAccount();
     },
 
-    'web-search': async (args, apiInstance, flags, options) => {
-      // Accept queries as positional args or --query (comma-separated or repeated)
-      let queries = args.length > 0 ? args : [];
-      if (options.query) {
-        const fromOption = Array.isArray(options.query) ? options.query : [options.query];
-        queries = queries.concat(fromOption);
-      }
-      if (queries.length === 0) {
-        throw new NansenError('At least one query is required. Usage: nansen web-search "bitcoin price" --num-results 5', ErrorCode.MISSING_PARAM);
-      }
-      const numResultsRaw = parseInt(options['num-results'], 10);
-      const numResults = options['num-results'] !== undefined
-        ? (Number.isNaN(numResultsRaw) ? undefined : numResultsRaw)
-        : undefined;
-      return apiInstance.webSearch({ queries, numResults });
-    },
+    'web': async (args, apiInstance, flags, options) => {
+      const subcommand = args[0] || 'help';
+      const subArgs = args.slice(1);
 
-    'web-fetch': async (args, apiInstance, flags, options) => {
-      // Accept URLs as positional args or --url (repeated)
-      let urls = args.length > 0 ? args : [];
-      if (options.url) {
-        const fromOption = Array.isArray(options.url) ? options.url : [options.url];
-        urls = urls.concat(fromOption);
+      const handlers = {
+        'search': async () => {
+          // Accept queries as positional args or --query (repeated)
+          let queries = subArgs.length > 0 ? subArgs : [];
+          if (options.query) {
+            const fromOption = Array.isArray(options.query) ? options.query : [options.query];
+            queries = queries.concat(fromOption);
+          }
+          if (queries.length === 0) {
+            throw new NansenError('At least one query is required. Usage: nansen web search "bitcoin price" --num-results 5', ErrorCode.MISSING_PARAM);
+          }
+          let numResults;
+          if (options['num-results'] !== undefined) {
+            const numResultsRaw = parseInt(options['num-results'], 10);
+            if (Number.isNaN(numResultsRaw)) {
+              // Non-numeric — fall back to API default
+              numResults = undefined;
+            } else if (numResultsRaw >= 1 && numResultsRaw <= 20) {
+              numResults = numResultsRaw;
+            } else {
+              throw new NansenError('--num-results must be between 1 and 20', ErrorCode.INVALID_PARAM);
+            }
+          }
+          return apiInstance.webSearch({ queries, numResults });
+        },
+
+        'fetch': async () => {
+          // Accept URLs as positional args or --url (repeated)
+          let urls = subArgs.length > 0 ? subArgs : [];
+          if (options.url) {
+            const fromOption = Array.isArray(options.url) ? options.url : [options.url];
+            urls = urls.concat(fromOption);
+          }
+          if (urls.length === 0) {
+            throw new NansenError('At least one URL is required. Usage: nansen web fetch https://example.com --question "What is this about?"', ErrorCode.MISSING_PARAM);
+          }
+          if (!options.question) {
+            throw new NansenError('--question is required. Usage: nansen web fetch https://example.com --question "What is this about?"', ErrorCode.MISSING_PARAM);
+          }
+          return apiInstance.webFetch({ urls, question: options.question });
+        },
+
+        'help': async () => ({
+          subcommands: ['search', 'fetch'],
+          description: 'Web search and fetch commands',
+          examples: [
+            'nansen web search "bitcoin price"',
+            'nansen web search "solana news" --num-results 5',
+            'nansen web fetch https://nansen.ai --question "What does Nansen do?"',
+          ],
+        }),
+      };
+
+      if (!handlers[subcommand]) {
+        throw new NansenError(`Unknown web subcommand: ${subcommand}. Available: search, fetch`, ErrorCode.UNKNOWN);
       }
-      if (urls.length === 0) {
-        throw new NansenError('At least one URL is required. Usage: nansen web-fetch https://example.com --question "What is this about?"', ErrorCode.MISSING_PARAM);
-      }
-      if (!options.question) {
-        throw new NansenError('--question is required. Usage: nansen web-fetch https://example.com --question "What is this about?"', ErrorCode.MISSING_PARAM);
-      }
-      return apiInstance.webFetch({ urls, question: options.question });
+
+      return handlers[subcommand]();
     },
 
     'login': async (args, apiInstance, flags, options) => {

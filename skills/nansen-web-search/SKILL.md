@@ -21,9 +21,9 @@ allowed-tools: Bash(nansen:*)
 Search the web for one or more queries in parallel via the Serper API.
 
 ```bash
-nansen web-search "bitcoin price"
-nansen web-search "solana ecosystem news" --num-results 5
-nansen web-search --query "ethereum ETF" --query "bitcoin ETF" --num-results 3
+nansen web search "bitcoin price"
+nansen web search "solana ecosystem news" --num-results 5
+nansen web search --query "ethereum ETF" --query "bitcoin ETF" --num-results 3
 ```
 
 Positional args and `--query` flags can be combined — all become queries.
