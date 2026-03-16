@@ -790,6 +790,7 @@ export function buildCommands(deps = {}) {
             const fromOption = Array.isArray(options.query) ? options.query : [options.query];
             queries = queries.concat(fromOption);
           }
+          queries = queries.filter(q => q.trim());
           if (queries.length === 0) {
             throw new NansenError('At least one query is required. Usage: nansen web search "bitcoin price" --num-results 5', ErrorCode.MISSING_PARAM);
           }
@@ -802,7 +803,7 @@ export function buildCommands(deps = {}) {
             } else if (numResultsRaw >= 1 && numResultsRaw <= 20) {
               numResults = numResultsRaw;
             } else {
-              throw new NansenError('--num-results must be between 1 and 20', ErrorCode.INVALID_PARAM);
+              throw new NansenError('--num-results must be between 1 and 20', ErrorCode.INVALID_PARAMS);
             }
           }
           return apiInstance.webSearch({ queries, numResults });
@@ -818,8 +819,13 @@ export function buildCommands(deps = {}) {
           if (urls.length === 0) {
             throw new NansenError('At least one URL is required. Usage: nansen web fetch https://example.com --question "What is this about?"', ErrorCode.MISSING_PARAM);
           }
-          if (!options.question) {
-            throw new NansenError('--question is required. Usage: nansen web fetch https://example.com --question "What is this about?"', ErrorCode.MISSING_PARAM);
+          for (const u of urls) {
+            try { new URL(u); } catch {
+              throw new NansenError(`Invalid URL: "${u}". URLs must include a scheme, e.g. https://example.com`, ErrorCode.INVALID_PARAMS);
+            }
+          }
+          if (!options.question || !options.question.trim()) {
+            throw new NansenError('--question is required and cannot be blank. Usage: nansen web fetch https://example.com --question "What is this about?"', ErrorCode.MISSING_PARAM);
           }
           return apiInstance.webFetch({ urls, question: options.question });
         },

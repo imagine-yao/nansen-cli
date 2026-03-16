@@ -3626,6 +3626,20 @@ describe('web search subcommand', () => {
   it('throws MISSING_PARAM when no query provided', async () => {
     await expect(webCmd([])).rejects.toThrow('At least one query is required');
   });
+
+  it('filters out empty string queries', async () => {
+    await webCmd(['', 'bitcoin'], {});
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['bitcoin'], numResults: undefined });
+  });
+
+  it('throws MISSING_PARAM when all queries are empty/whitespace', async () => {
+    await expect(webCmd(['', '   '])).rejects.toThrow('At least one query is required');
+  });
+
+  it('filters out whitespace-only queries', async () => {
+    await webCmd(['  ', 'ethereum'], {});
+    expect(mockApi.webSearch).toHaveBeenCalledWith({ queries: ['ethereum'], numResults: undefined });
+  });
 });
 
 describe('web fetch subcommand', () => {
@@ -3678,6 +3692,18 @@ describe('web fetch subcommand', () => {
 
   it('throws MISSING_PARAM when --question is missing', async () => {
     await expect(webCmd(['https://nansen.ai'])).rejects.toThrow('--question is required');
+  });
+
+  it('throws MISSING_PARAM when --question is blank/whitespace', async () => {
+    await expect(webCmd(['https://nansen.ai'], { question: '   ' })).rejects.toThrow('--question is required and cannot be blank');
+  });
+
+  it('throws INVALID_PARAMS when a URL has no scheme', async () => {
+    await expect(webCmd(['not-a-url'], { question: 'What?' })).rejects.toThrow('Invalid URL: "not-a-url"');
+  });
+
+  it('throws INVALID_PARAMS when a URL has no scheme (://bad)', async () => {
+    await expect(webCmd(['://bad'], { question: 'What?' })).rejects.toThrow('Invalid URL');
   });
 
   it('throws MISSING_PARAM when both URL and question are missing', async () => {
