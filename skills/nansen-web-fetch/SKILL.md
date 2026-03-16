@@ -1,6 +1,6 @@
 ---
 name: nansen-web-fetch
-description: Fetch and analyze content from one or more URLs using AI (Gemini 2.5 Flash). Use when you have specific URLs and need to extract or summarize their content. Pairs well with web-search results. Internal-only endpoint.
+description: Fetch and analyze content from one or more URLs using AI (Gemini 2.5 Flash). Use when you have specific URLs and need to extract or summarize their content. Pairs well with `nansen web search` results.
 metadata:
   openclaw:
     requires:

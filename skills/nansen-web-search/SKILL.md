@@ -1,6 +1,6 @@
 ---
 name: nansen-web-search
-description: Search the web for one or more queries in parallel. Use when you need current information, news, prices, or any web content to complement on-chain Nansen data. Internal-only endpoint.
+description: Search the web for one or more queries in parallel. Use when you need current information, news, prices, or any web content to complement on-chain Nansen data.
 metadata:
   openclaw:
     requires:
@@ -36,4 +36,4 @@ Positional args and `--query` flags can be combined — all become queries.
 
 Returns `results[]` — one entry per query, each with `organic[]` (title, link, snippet, date) and optional `knowledge_graph`.
 
-**Note:** Some domains are excluded from results (paywalled/unfetchable sites like bloomberg.com, twitter.com). Use `web-fetch` to retrieve content from specific URLs.
+**Note:** Some domains are excluded from results (paywalled/unfetchable sites like bloomberg.com, twitter.com). Use `nansen web fetch` to retrieve content from specific URLs.
