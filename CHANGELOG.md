@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.18.0
+
+### Minor Changes
+
+- [#265](https://github.com/nansen-ai/nansen-cli/pull/265) [`c3de691`](https://github.com/nansen-ai/nansen-cli/commit/c3de6914dcdd29f54d027f0cc415c23dd646c003) Thanks [@TimNooren](https://github.com/TimNooren)! - Add `nansen alerts` command for managing smart alerts (list, create, update, toggle, delete).
+
+  Supports three alert types: `sm-token-flows`, `common-token-transfer`, and `smart-contract-call`.
+  Named flags (`--inflow-1h-min`, `--chains`, `--telegram`, etc.) let you build alerts without raw JSON;
+  a `--data` escape hatch is available for full config overrides.
+
+  Also adds a `nansen-alerts` skill for agent integration.
+
+- [#295](https://github.com/nansen-ai/nansen-cli/pull/295) [`3ddcbde`](https://github.com/nansen-ai/nansen-cli/commit/3ddcbdec50d55e4477cd3f53c5064126dbd8580a) Thanks [@kome12](https://github.com/kome12)! - feat: add `nansen web search` and `nansen web fetch` commands (ECINT-6393)
+
+  - `nansen web search <query> [query...]` — search the web for one or more queries in parallel via `/api/v1/search/web-search`
+  - `nansen web fetch <url> [url...] --question <q>` — fetch and analyze URL content with AI via `/api/v1/search/web-fetch`
+
+### Patch Changes
+
+- [#293](https://github.com/nansen-ai/nansen-cli/pull/293) [`bcd95a8`](https://github.com/nansen-ai/nansen-cli/commit/bcd95a88942e96018337ae6b7de9f2abdbdc3464) Thanks [@TimNooren](https://github.com/TimNooren)! - Add default values for all required alert data fields to match backend schema
+
+- [#265](https://github.com/nansen-ai/nansen-cli/pull/265) [`c3de691`](https://github.com/nansen-ai/nansen-cli/commit/c3de6914dcdd29f54d027f0cc415c23dd646c003) Thanks [@TimNooren](https://github.com/TimNooren)! - Fix `alerts list` filtering (`--type`, `--enabled`, `--disabled`, `--chain`, `--token-address`, `--limit`, `--offset`).
+
+  Filters were sent as query params but silently ignored by the API. Now applied client-side after fetching all alerts.
+
+- [#301](https://github.com/nansen-ai/nansen-cli/pull/301) [`cda6796`](https://github.com/nansen-ai/nansen-cli/commit/cda6796642c588965111c53c583af2b21444d30b) Thanks [@kome12](https://github.com/kome12)! - fix: add missing openclaw metadata to 19 skills
+
+- [#294](https://github.com/nansen-ai/nansen-cli/pull/294) [`8a1cc7b`](https://github.com/nansen-ai/nansen-cli/commit/8a1cc7bdfbd9597860384dfd40fd28705e5c947c) Thanks [@yodablocks](https://github.com/yodablocks)! - fix: include skills/ directory in published npm package
+
 ## 1.17.0
 
 ### Minor Changes
