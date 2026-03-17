@@ -1,5 +1,5 @@
 ---
-name: nansen-token-flow-forensics
+name: nansen-token-transfer-analysis
 description: "Where is this token moving and why? Large transfers, flow trends over time, and breakdown by wallet label."
 metadata:
   openclaw:

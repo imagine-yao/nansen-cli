@@ -1,5 +1,5 @@
 ---
-name: nansen-wallet-activity
+name: nansen-wallet-deep-dive
 description: "Who is this wallet and what have they been doing? Identity labels, balance, PnL summary, recent transactions, perp positions, and counterparties."
 metadata:
   openclaw:

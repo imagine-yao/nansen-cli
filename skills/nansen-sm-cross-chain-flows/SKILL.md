@@ -1,5 +1,5 @@
 ---
-name: nansen-cross-chain-flows
+name: nansen-sm-cross-chain-flows
 description: "Is SM buying this token on one chain but selling on another? Detect capital rotation."
 metadata:
   openclaw:
