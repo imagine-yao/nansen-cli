@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.19.0
+
+### Minor Changes
+
+- [#306](https://github.com/nansen-ai/nansen-cli/pull/306) [`f685eb8`](https://github.com/nansen-ai/nansen-cli/commit/f685eb8b87d2915a7a94e8c1a3d92f84e4802e4a) Thanks [@0xlaveen](https://github.com/0xlaveen)! - Rename 30 skills for clarity and clawhub slug uniqueness. Abbreviations expanded (`pm` → `polymarket`, `sm` prefix added where relevant), ambiguous names made specific (`nansen-wallet` → `nansen-wallet-manager`, `nansen-profiler` → `nansen-wallet-profiler`, `nansen-search` → `nansen-general-search`, `nansen-trade` → `nansen-trading`, etc.).
+
+### Patch Changes
+
+- [#308](https://github.com/nansen-ai/nansen-cli/pull/308) [`569d7d4`](https://github.com/nansen-ai/nansen-cli/commit/569d7d43e428732d3c10b4e57368cb12ef0086c3) Thanks [@kome12](https://github.com/kome12)! - fix: include src subdirectories in npm package
+
+  The `files` field in package.json used `src/*.js` which only matched files directly in `src/`, causing `src/commands/` to be missing from the 1.18.0 publish. Changed to `src/**/*.js` to include all subdirectories recursively, and added `!src/__tests__/**` to exclude test files from the package.
+
 ## 1.18.0
 
 ### Minor Changes
