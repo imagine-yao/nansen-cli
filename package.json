@@ -8,8 +8,9 @@
     "nansen": "./src/index.js"
   },
   "files": [
-    "src/*.js",
-    "src/*.json",
+    "src/**/*.js",
+    "src/**/*.json",
+    "!src/__tests__/**",
     "skills/**",
     "CHANGELOG.md"
   ],
