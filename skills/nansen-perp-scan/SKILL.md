@@ -1,6 +1,19 @@
 ---
 name: nansen-perp-scan
 description: "What is the state of the Hyperliquid perp market? Top contracts by volume/OI, trader leaderboard, and SM perp activity."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # Perp Market Scan

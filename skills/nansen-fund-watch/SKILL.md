@@ -1,6 +1,19 @@
 ---
 name: nansen-fund-watch
 description: "What are crypto funds and VCs holding right now? Cross-chain fund portfolios and net accumulation signals."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # Fund Watch

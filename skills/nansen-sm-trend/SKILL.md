@@ -1,6 +1,19 @@
 ---
 name: nansen-sm-trend
 description: "Has SM been in this token for weeks, or did they just enter? Are they still buying?"
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 ```bash
 TOKEN=<address> CHAIN=ethereum

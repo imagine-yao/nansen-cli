@@ -1,6 +1,19 @@
 ---
 name: nansen-holder-quality
 description: "Is this token held by quality wallets or retail noise? SM holder ratio, flow breakdown by label, and recent buyer quality."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # Holder Quality

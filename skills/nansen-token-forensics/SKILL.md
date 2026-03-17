@@ -1,6 +1,19 @@
 ---
 name: nansen-token-forensics
 description: "Where is this token moving and why? Large transfers, flow trends over time, and breakdown by wallet label."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - NANSEN_API_KEY
+      bins:
+        - nansen
+    primaryEnv: NANSEN_API_KEY
+    install:
+      - kind: node
+        package: nansen-cli
+        bins: [nansen]
+allowed-tools: Bash(nansen:*)
 ---
 
 # Token Forensics
