@@ -2395,7 +2395,7 @@ describe('login/logout flow', () => {
 
       if (savedEnv !== undefined) process.env.NANSEN_API_KEY = savedEnv;
       expect(logs.some(l => l.includes('Nansen CLI Login'))).toBe(true);
-      expect(logs.some(l => l.includes('https://app.nansen.ai/api'))).toBe(true);
+      expect(logs.some(l => l.includes('https://app.nansen.ai/auth/agent-setup'))).toBe(true);
     });
 
     it('should save config with --api-key option', async () => {

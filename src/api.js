@@ -630,7 +630,7 @@ export class NansenAPI {
                   } catch (x402Err) {
                     if (!this.apiKey) {
                       message = 'No API key configured. Two ways to authenticate:\n' +
-                        '  1. API key: nansen login --api-key <key> (get key at https://app.nansen.ai/api)\n' +
+                        '  1. API key: nansen login --api-key <key> (get key at https://app.nansen.ai/auth/agent-setup)\n' +
                         '  2. x402 micropayment: nansen wallet create + fund with USDC (no API key needed)';
                     } else {
                       message = `x402 auto-payment failed: ${x402Err.message}`;

@@ -15,11 +15,13 @@ npx skills add nansen-ai/nansen-cli  # load agent skill files
 ## Auth
 
 ```bash
-nansen login              # interactive — saves to ~/.nansen/config.json
-export NANSEN_API_KEY=... # or env var (highest priority)
+nansen login --api-key <key>   # save key to ~/.nansen/config.json
+nansen login --human           # interactive prompt
+export NANSEN_API_KEY=...      # env var (highest priority)
+nansen logout                  # remove saved key
 ```
 
-Get your API key at [app.nansen.ai/api](https://app.nansen.ai/api). AI agents can use the [Agent Setup](https://app.nansen.ai/auth/agent-setup) flow instead.
+Get your API key at [app.nansen.ai/auth/agent-setup](https://app.nansen.ai/auth/agent-setup).
 
 ## Commands
 

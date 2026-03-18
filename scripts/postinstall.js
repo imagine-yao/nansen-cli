@@ -123,7 +123,7 @@ async function testQuery() {
   if (!isLoggedIn()) {
     log();
     log(`Not logged in yet. Run ${CYAN}nansen login --api-key <key>${RESET} to authenticate.`);
-    log(`Get your API key at: ${CYAN}https://app.nansen.ai/api${RESET}`);
+    log(`Get your API key at: ${CYAN}https://app.nansen.ai/auth/agent-setup${RESET}`);
     return;
   }
 

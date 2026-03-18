@@ -685,7 +685,7 @@ COMMANDS:
   alerts      list, create, update, toggle, delete
   web         search, fetch
   account     Show API key status, plan, and remaining credits
-  login       Save API key (--api-key <key> or NANSEN_API_KEY env var)
+  login       Save API key (--api-key <key>, --human, or NANSEN_API_KEY env var)
   logout      Remove saved API key
   schema      JSON schema for all commands (use "nansen schema <cmd>" for one)
   cache       clear
@@ -859,7 +859,7 @@ export function buildCommands(deps = {}) {
         log('  --api-key <key>   Your Nansen API key');
         log('  --human           Enable interactive prompt');
         log('  --help            Show this help\n');
-        log('Get your API key at: https://app.nansen.ai/api');
+        log('Get your API key at: https://app.nansen.ai/auth/agent-setup');
         return;
       }
 
@@ -879,7 +879,7 @@ export function buildCommands(deps = {}) {
           return;
         }
         log('Nansen CLI Login\n');
-        log('Get your API key at: https://app.nansen.ai/api\n');
+        log('Get your API key at: https://app.nansen.ai/auth/agent-setup\n');
         apiKey = await promptFn('Enter your API key: ', true);
       }
 
@@ -890,7 +890,7 @@ export function buildCommands(deps = {}) {
           resolution: [
             'Run: nansen login --api-key <key>',
             'Or set NANSEN_API_KEY environment variable',
-            'Get your API key at: https://app.nansen.ai/api',
+            'Get your API key at: https://app.nansen.ai/auth/agent-setup',
           ],
         }));
         exit(1);
@@ -912,7 +912,7 @@ export function buildCommands(deps = {}) {
           log(JSON.stringify({
             error: 'INVALID_API_KEY',
             message: 'The API key is not valid.',
-            resolution: ['Check your key at https://app.nansen.ai/api']
+            resolution: ['Check your key at https://app.nansen.ai/auth/agent-setup']
           }));
         } else {
           log(JSON.stringify({
