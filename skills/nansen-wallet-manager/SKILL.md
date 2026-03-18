@@ -1,6 +1,6 @@
 ---
 name: nansen-wallet-manager
-description: Wallet management — create, list, show, export, send, delete. Use when creating wallets, checking balances, or sending tokens.
+description: Wallet management — create (local or Privy server-side), list, show, export, send, delete. Use when creating wallets, checking balances, or sending tokens.
 metadata:
   openclaw:
     requires:
@@ -30,7 +30,49 @@ NANSEN_API_KEY=<key> nansen login
 nansen research profiler labels --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --chain ethereum
 ```
 
-## Wallet Creation (Two-Step Agent Flow)
+## Wallet Providers
+
+The CLI supports two wallet providers:
+
+| | **Local** (default) | **Privy** (server-side) |
+|---|---|---|
+| Key storage | Encrypted on disk | Server-side via Privy API |
+| Password required | Yes (min 12 chars) | No |
+| Export private keys | Yes (`wallet export`) | No — keys are managed by Privy |
+| Best for | Human users, manual trading | Agents, automated workflows |
+| Flag | `--provider local` (default) | `--provider privy` |
+| Required env vars | `NANSEN_WALLET_PASSWORD` | `PRIVY_APP_ID` + `PRIVY_APP_SECRET` |
+
+## Privy Wallet Creation
+
+Privy wallets are server-side wallets managed by the Privy API. No password is needed — keys never touch the local machine.
+
+### Prerequisites
+
+The following environment variables must be set:
+
+| Var | Purpose |
+|-----|---------|
+| `PRIVY_APP_ID` | Privy application ID |
+| `PRIVY_APP_SECRET` | Privy application secret |
+
+### Create a Privy wallet
+
+```bash
+nansen wallet create --provider privy
+# Or with a custom name:
+nansen wallet create --name agent-wallet --provider privy
+```
+
+### Critical rules for agents (Privy)
+
+- **No password needed** — Privy manages keys server-side
+- **Cannot export keys** — `wallet export` only works for local wallets
+- All other operations (`list`, `show`, `send`, `delete`, `default`) work identically for both providers
+
+## Local Wallet Creation (Two-Step Agent Flow)
+
+> This section covers **local** wallet creation. For Privy server-side wallets, see the [Privy Wallet Creation](#privy-wallet-creation) section above — no password is needed.
 
 Wallet creation requires a password from the **human user**. The agent must NOT generate or store the password itself.
 
@@ -127,6 +169,7 @@ For detailed migration steps (from `~/.nansen/.env`, `.credentials`, or env-var-
 | `--chain` | `evm` or `solana` |
 | `--max` | Send entire balance |
 | `--dry-run` | Preview without broadcasting |
+| `--provider` | Wallet provider: `local` (default, encrypted on disk) or `privy` (server-side via Privy API) |
 | `--human` | Enable interactive prompts (human terminal use only — agents must NOT use this) |
 | `--unsafe-no-password` | Skip encryption (keys stored in plaintext — NOT recommended) |
 
@@ -136,5 +179,8 @@ For detailed migration steps (from `~/.nansen/.env`, `.credentials`, or env-var-
 |-----|---------|
 | `NANSEN_WALLET_PASSWORD` | Wallet encryption password — only needed for initial `wallet create`. After that, the OS keychain handles it. |
 | `NANSEN_API_KEY` | API key (also set via `nansen login --api-key <key>`) |
+| `PRIVY_APP_ID` | Privy application ID (required for `--provider privy`) |
+| `PRIVY_APP_SECRET` | Privy application secret (required for `--provider privy`) |
+| `NANSEN_WALLET_PROVIDER` | Default provider for wallet create — `local` or `privy` |
 | `NANSEN_EVM_RPC` | Custom EVM RPC endpoint |
 | `NANSEN_SOLANA_RPC` | Custom Solana RPC endpoint |
