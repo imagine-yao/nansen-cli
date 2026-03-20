@@ -493,7 +493,6 @@ OPTIONS (all types):
   --description '<text>'       Alert description
   --disabled                   Create in disabled state
   --data '<json>'              Raw JSON merged on top of named flags (escape hatch)
-  --webhook <url>              HTTP/HTTPS endpoint to POST alert payloads to
 
 OPTIONS (sm-token-flows):
   At least one flow threshold required (inflow, outflow, or netflow):
@@ -610,7 +609,7 @@ USAGE:
           if (!name) missing.push('--name');
           if (!type) missing.push('--type');
           if (!options.chains) missing.push('--chains');
-          if (!channels) missing.push('a channel (--telegram, --slack, or --discord)');
+          if (!channels) missing.push('a channel (--telegram, --slack, --discord, or --webhook)');
           if (missing.length > 0) {
             throw new NansenError(`Required: ${missing.join(', ')}`, ErrorCode.MISSING_PARAM);
           }

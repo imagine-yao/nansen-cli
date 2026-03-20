@@ -866,6 +866,43 @@ describe('alerts create — webhook channel', () => {
       }),
     );
   });
+
+  it('should mention --webhook in the missing-channel error message', async () => {
+    const mockApi = { alertsCreate: vi.fn() };
+    const cmd = buildAlertsCommands({ log: vi.fn() })['alerts'];
+    let err;
+    try {
+      await cmd(['create'], mockApi, {}, { name: 'Test', type: 'sm-token-flows', chains: 'ethereum', 'inflow-1h-min': 1000000 });
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(err.message).toContain('--webhook');
+  });
+
+  it('should rewrite API error for webhook channel index 0', async () => {
+    const { NansenError, ErrorCode } = await import('../api.js');
+    const mockApi = {
+      alertsCreate: vi.fn().mockRejectedValue(
+        new NansenError('Failed to send a welcome message to the channel index 0', ErrorCode.INVALID_PARAMS),
+      ),
+    };
+    const cmd = buildAlertsCommands({ log: vi.fn() })['alerts'];
+    let err;
+    try {
+      await cmd(
+        ['create'],
+        mockApi,
+        {},
+        { name: 'Test', type: 'sm-token-flows', chains: 'ethereum', webhook: 'https://example.com/hook', 'inflow-1h-min': 1000000 },
+      );
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(err.message).toContain('https://example.com/hook');
+    expect(err.message).toContain('2xx');
+  });
 });
 
 describe('alerts update — type inference', () => {
