@@ -18,7 +18,6 @@ import {
   authenticate,
   signSolanaMessage,
   resolveSolanaWallet,
-  signTransaction,
   parseExpiry,
   buildLimitOrderCommands,
   getChallenge,
@@ -33,7 +32,6 @@ import {
   confirmCancelOrder,
 } from '../limit-order.js';
 import { createWallet } from '../wallet.js';
-import { signEd25519 } from '../transfer.js';
 
 let originalHome;
 let tempDir;

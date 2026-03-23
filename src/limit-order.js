@@ -6,11 +6,7 @@
  * Zero external dependencies — uses Node.js built-in crypto only.
  */
 
-import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { base58Encode, exportWallet, getWalletConfig, showWallet, listWallets } from './wallet.js';
+import { base58Encode, exportWallet, getWalletConfig, showWallet } from './wallet.js';
 import { signEd25519, base58Decode } from './transfer.js';
 import { signSolanaTransaction, resolveTokenAddress, validateBaseUnitAmount } from './trading.js';
 import { getWalletConnectAddress, sendSolanaTransactionViaWalletConnect, signSolanaMessageViaWalletConnect } from './walletconnect-trading.js';
