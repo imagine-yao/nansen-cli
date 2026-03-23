@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { execFileSync } from 'child_process';
 import { base58Encode, exportWallet, getWalletConfig, showWallet, listWallets } from './wallet.js';
 import { signEd25519, base58Decode } from './transfer.js';
 import { signSolanaTransaction, resolveTokenAddress, validateBaseUnitAmount } from './trading.js';
@@ -22,21 +23,88 @@ const TRADING_API_URL = process.env.NANSEN_TRADING_API_URL || 'https://trading-a
 const LO_PREFIX = '/limit-order/v2';
 const SOLSCAN_TX_URL = 'https://solscan.io/tx/';
 
-// ============= JWT Auth & Caching =============
+// ============= JWT Auth & Caching (OS Keychain) =============
 
-function getAuthCachePath() {
-  return path.join(process.env.HOME || process.env.USERPROFILE || '', '.nansen', 'limit-order-auth.json');
+const KEYCHAIN_SERVICE = 'nansen-cli';
+const KEYCHAIN_TIMEOUT_MS = 5000;
+
+/**
+ * Build a keychain account name scoped to a wallet pubkey.
+ * This ensures switching wallets doesn't return a stale JWT.
+ */
+function keychainAccount(walletPubkey) {
+  return `limit-order-jwt:${walletPubkey}`;
 }
 
 /**
- * Load a cached JWT token for the given wallet pubkey.
- * Returns the token string if valid, null otherwise.
+ * Store a JWT token in the OS keychain.
+ * The token is stored as a JSON blob containing the JWT + expiry.
+ * Falls back silently if keychain is unavailable.
+ */
+export function saveCachedToken(walletPubkey, token) {
+  const data = JSON.stringify({
+    walletPubkey,
+    token,
+    // 23-hour TTL provides 1-hour safety margin against server's 24-hour JWT
+    expiresAt: Date.now() + 23 * 3600 * 1000,
+  });
+  const account = keychainAccount(walletPubkey);
+
+  try {
+    if (process.platform === 'darwin') {
+      execFileSync('/usr/bin/security', [
+        'add-generic-password',
+        '-s', KEYCHAIN_SERVICE,
+        '-a', account,
+        '-w', data,
+        '-U', // Update if exists
+      ], { timeout: KEYCHAIN_TIMEOUT_MS, stdio: 'pipe' });
+      return true;
+    }
+
+    if (process.platform === 'linux') {
+      execFileSync('secret-tool', [
+        'store',
+        '--label', `${KEYCHAIN_SERVICE} limit-order JWT`,
+        'service', KEYCHAIN_SERVICE,
+        'account', account,
+      ], { input: data, timeout: KEYCHAIN_TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
+      return true;
+    }
+  } catch {
+    // Keychain unavailable — token won't be cached, but operation continues
+  }
+  return false;
+}
+
+/**
+ * Load a cached JWT token from the OS keychain.
+ * Returns the token string if valid and not expired, null otherwise.
  */
 export function loadCachedToken(walletPubkey) {
+  const account = keychainAccount(walletPubkey);
+
   try {
-    const cachePath = getAuthCachePath();
-    if (!fs.existsSync(cachePath)) return null;
-    const data = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    let raw;
+    if (process.platform === 'darwin') {
+      raw = execFileSync('/usr/bin/security', [
+        'find-generic-password',
+        '-s', KEYCHAIN_SERVICE,
+        '-a', account,
+        '-w',
+      ], { timeout: KEYCHAIN_TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+    } else if (process.platform === 'linux') {
+      raw = execFileSync('secret-tool', [
+        'lookup',
+        'service', KEYCHAIN_SERVICE,
+        'account', account,
+      ], { timeout: KEYCHAIN_TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+    } else {
+      return null;
+    }
+
+    if (!raw) return null;
+    const data = JSON.parse(raw);
     if (data.walletPubkey !== walletPubkey) return null;
     // 5-minute buffer before expiry to avoid mid-request failures
     if (data.expiresAt <= Date.now() + 300_000) return null;
@@ -44,29 +112,6 @@ export function loadCachedToken(walletPubkey) {
   } catch {
     return null;
   }
-}
-
-/**
- * Save a JWT token to disk for later reuse.
- * Uses atomic write (temp file + rename) to avoid corruption.
- */
-export function saveCachedToken(walletPubkey, token) {
-  const cachePath = getAuthCachePath();
-  const dir = path.dirname(cachePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  }
-
-  const data = {
-    walletPubkey,
-    token,
-    // 23-hour TTL provides 1-hour safety margin against server's 24-hour JWT
-    expiresAt: Date.now() + 23 * 3600 * 1000,
-  };
-
-  const tmpPath = cachePath + '.' + crypto.randomBytes(4).toString('hex') + '.tmp';
-  fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), { mode: 0o600 });
-  fs.renameSync(tmpPath, cachePath);
 }
 
 // ============= API Client =============

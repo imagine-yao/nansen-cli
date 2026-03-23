@@ -12,11 +12,6 @@ import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
 
-// We need to mock child_process before any imports that use walletconnect
-vi.mock('child_process', () => ({
-  execFile: vi.fn(),
-}));
-
 import {
   loadCachedToken,
   saveCachedToken,
@@ -80,10 +75,58 @@ function createTestWallet(name = 'test-wallet') {
   return createWallet(name, null);
 }
 
-// ============= JWT Caching =============
+// ============= JWT Caching (OS Keychain) =============
 
-describe('JWT caching', () => {
-  it('loadCachedToken returns null when no file exists', () => {
+// We mock execFileSync to simulate keychain behavior in tests.
+// This avoids touching the real OS keychain during test runs.
+vi.mock('child_process', async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...original,
+    execFile: vi.fn(), // for walletconnect mock
+    execFileSync: vi.fn(), // for keychain mock
+  };
+});
+
+import { execFileSync } from 'child_process';
+
+// In-memory keychain store for tests
+let keychainStore = {};
+
+function setupKeychainMock() {
+  keychainStore = {};
+  execFileSync.mockImplementation((cmd, args, opts) => {
+    // macOS security add-generic-password
+    if (cmd === '/usr/bin/security' && args[0] === 'add-generic-password') {
+      const sIdx = args.indexOf('-s');
+      const aIdx = args.indexOf('-a');
+      const wIdx = args.indexOf('-w');
+      const service = args[sIdx + 1];
+      const account = args[aIdx + 1];
+      const value = args[wIdx + 1];
+      keychainStore[`${service}:${account}`] = value;
+      return Buffer.from('');
+    }
+    // macOS security find-generic-password
+    if (cmd === '/usr/bin/security' && args[0] === 'find-generic-password') {
+      const sIdx = args.indexOf('-s');
+      const aIdx = args.indexOf('-a');
+      const service = args[sIdx + 1];
+      const account = args[aIdx + 1];
+      const value = keychainStore[`${service}:${account}`];
+      if (!value) throw new Error('Item not found');
+      return Buffer.from(value + '\n');
+    }
+    throw new Error(`Unexpected execFileSync call: ${cmd} ${args.join(' ')}`);
+  });
+}
+
+describe('JWT caching (keychain)', () => {
+  beforeEach(() => {
+    setupKeychainMock();
+  });
+
+  it('loadCachedToken returns null when no entry exists', () => {
     expect(loadCachedToken('somePubkey')).toBeNull();
   });
 
@@ -93,26 +136,23 @@ describe('JWT caching', () => {
   });
 
   it('loadCachedToken returns null when token is expired', () => {
-    const cachePath = path.join(tempDir, '.nansen', 'limit-order-auth.json');
-    const dir = path.dirname(cachePath);
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(cachePath, JSON.stringify({
+    // Manually inject expired data into keychain store
+    const key = 'nansen-cli:limit-order-jwt:pubkey';
+    keychainStore[key] = JSON.stringify({
       walletPubkey: 'pubkey',
       token: 'expired-token',
-      expiresAt: Date.now() - 1000, // Already expired
-    }), { mode: 0o600 });
+      expiresAt: Date.now() - 1000,
+    });
     expect(loadCachedToken('pubkey')).toBeNull();
   });
 
   it('loadCachedToken returns null when within 5-min buffer of expiry', () => {
-    const cachePath = path.join(tempDir, '.nansen', 'limit-order-auth.json');
-    const dir = path.dirname(cachePath);
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(cachePath, JSON.stringify({
+    const key = 'nansen-cli:limit-order-jwt:pubkey';
+    keychainStore[key] = JSON.stringify({
       walletPubkey: 'pubkey',
       token: 'almost-expired-token',
       expiresAt: Date.now() + 60_000, // 1 minute left, within 5-min buffer
-    }), { mode: 0o600 });
+    });
     expect(loadCachedToken('pubkey')).toBeNull();
   });
 
@@ -122,17 +162,15 @@ describe('JWT caching', () => {
     expect(token).toBe('jwt-abc-123');
   });
 
-  it('saveCachedToken creates directory if missing', () => {
-    const nansenDir = path.join(tempDir, '.nansen');
-    expect(fs.existsSync(nansenDir)).toBe(false);
-    saveCachedToken('pubkey', 'token');
-    expect(fs.existsSync(nansenDir)).toBe(true);
-  });
-
   it('saveCachedToken overwrites previous token', () => {
     saveCachedToken('pubkey', 'token-1');
     saveCachedToken('pubkey', 'token-2');
     expect(loadCachedToken('pubkey')).toBe('token-2');
+  });
+
+  it('loadCachedToken returns null gracefully when keychain unavailable', () => {
+    execFileSync.mockImplementation(() => { throw new Error('keychain unavailable'); });
+    expect(loadCachedToken('pubkey')).toBeNull();
   });
 });
 
@@ -360,6 +398,10 @@ describe('signSolanaMessage', () => {
 // ============= Authentication Flow =============
 
 describe('authenticate', () => {
+  beforeEach(() => {
+    setupKeychainMock();
+  });
+
   it('returns cached token when valid', async () => {
     saveCachedToken('pub1', 'cached-jwt');
     const token = await authenticate('pub1', 'local', {});
@@ -449,6 +491,10 @@ describe('resolveSolanaWallet', () => {
 // ============= Command Handlers =============
 
 describe('buildLimitOrderCommands', () => {
+  beforeEach(() => {
+    setupKeychainMock();
+  });
+
   // ---- create ----
   describe('create', () => {
     it('shows help when required params missing', async () => {
