@@ -906,6 +906,137 @@
               "description": "Destination chain (solana or base)"
             }
           }
+        },
+        "limit-order": {
+          "description": "Limit order management (Solana only, Jupiter Trigger V2)",
+          "subcommands": {
+            "create": {
+              "description": "Place a new limit order",
+              "options": {
+                "from": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Token to sell (address or symbol)"
+                },
+                "to": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Token to buy (address or symbol)"
+                },
+                "amount": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Amount in base units (e.g. lamports)"
+                },
+                "trigger-price": {
+                  "type": "number",
+                  "required": true,
+                  "description": "Trigger price in USD"
+                },
+                "trigger-condition": {
+                  "type": "string",
+                  "default": "below",
+                  "description": "Trigger when price is 'above' or 'below' target"
+                },
+                "trigger-mint": {
+                  "type": "string",
+                  "description": "Token whose price triggers the order (defaults to output mint)"
+                },
+                "slippage": {
+                  "type": "number",
+                  "description": "Slippage tolerance in basis points (e.g. 50 = 0.5%)"
+                },
+                "expires": {
+                  "type": "string",
+                  "default": "30d",
+                  "description": "Expiry duration (e.g. 24h, 7d, 30d) or epoch ms"
+                },
+                "wallet": {
+                  "type": "string",
+                  "description": "Wallet name (or \"walletconnect\"/\"wc\")"
+                }
+              },
+              "chains": ["solana"],
+              "prerequisites": [
+                "A Solana wallet must be configured. Run: nansen wallet create"
+              ]
+            },
+            "list": {
+              "description": "List your limit orders",
+              "options": {
+                "state": {
+                  "type": "string",
+                  "description": "Filter by state (open, filled, cancelled, expired)"
+                },
+                "mint": {
+                  "type": "string",
+                  "description": "Filter by token mint address"
+                },
+                "limit": {
+                  "type": "number",
+                  "default": 20,
+                  "description": "Max results per page"
+                },
+                "offset": {
+                  "type": "number",
+                  "default": 0,
+                  "description": "Pagination offset"
+                },
+                "sort": {
+                  "type": "string",
+                  "description": "Sort field"
+                },
+                "dir": {
+                  "type": "string",
+                  "default": "desc",
+                  "description": "Sort direction (asc or desc)"
+                },
+                "wallet": {
+                  "type": "string",
+                  "description": "Wallet name (or \"walletconnect\"/\"wc\")"
+                }
+              },
+              "chains": ["solana"]
+            },
+            "cancel": {
+              "description": "Cancel an open limit order",
+              "options": {
+                "order": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Order ID to cancel"
+                },
+                "wallet": {
+                  "type": "string",
+                  "description": "Wallet name (or \"walletconnect\"/\"wc\")"
+                }
+              },
+              "chains": ["solana"]
+            },
+            "update": {
+              "description": "Update trigger price or slippage on an existing order",
+              "options": {
+                "order": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Order ID to update"
+                },
+                "trigger-price": {
+                  "type": "number",
+                  "description": "New trigger price in USD"
+                },
+                "slippage": {
+                  "type": "number",
+                  "description": "New slippage in basis points (0-10000)"
+                },
+                "wallet": {
+                  "type": "string",
+                  "description": "Wallet name (or \"walletconnect\"/\"wc\")"
+                }
+              },
+              "chains": ["solana"]
+            }
+          }
         }
       }
     },

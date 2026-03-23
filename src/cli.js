@@ -6,6 +6,7 @@
 import { NansenAPI, NansenError, CommandError, ErrorCode, saveConfig, deleteConfig, getConfigFile, clearCache, getCacheDir, validateAddress, normalizeAddress, sleep } from './api.js';
 import { buildWalletCommands } from './wallet.js';
 import { buildTradingCommands } from './trading.js';
+import { buildLimitOrderCommands } from './limit-order.js';
 import { formatAlertsTable, buildAlertsCommands } from './commands/alerts.js';
 import { buildAgentCommands } from './commands/agent.js';
 import { resolveAddress, isEnsName } from './ens.js';
@@ -1474,8 +1475,9 @@ export function buildCommands(deps = {}) {
     return cmds[category](args.slice(1), apiInstance, flags, options);
   };
 
-  // 'trade' delegates to quote/execute from buildTradingCommands
+  // 'trade' delegates to quote/execute from buildTradingCommands and limit-order from buildLimitOrderCommands
   const tradingCmds = buildTradingCommands(deps);
+  const limitOrderCmds = buildLimitOrderCommands(deps);
   cmds['trade'] = async (args, apiInstance, flags, options) => {
     const sub = args[0];
     if (!sub || sub === 'help') {
@@ -1485,12 +1487,14 @@ SUBCOMMANDS:
   quote          Get a swap quote (price, route, fees)
   execute        Sign and broadcast a quoted swap
   bridge-status  Check cross-chain bridge transaction status
+  limit-order    Limit order management (Solana only, Jupiter Trigger V2)
 
 USAGE:
   nansen trade quote --chain <chain> --from <token> --to <token> --amount <units> [--wallet <name>]
   nansen trade quote --chain <chain> --to-chain <chain> --from <token> --to <token> --amount <units>
   nansen trade execute --quote <quoteId> [--wallet <name>]
   nansen trade bridge-status --tx-hash <hash> --from-chain <chain> --to-chain <chain>
+  nansen trade limit-order <create|list|cancel|update> [options]
 
 EXAMPLES:
   nansen trade quote --chain solana --from SOL --to USDC --amount 1000000000
@@ -1498,9 +1502,11 @@ EXAMPLES:
   nansen trade quote --chain base --to-chain solana --from USDC --to USDC --amount 1000000
   nansen trade execute --quote 1708900000000-abc123
   nansen trade bridge-status --tx-hash 0xabc... --from-chain base --to-chain solana
+  nansen trade limit-order create --from SOL --to USDC --amount 1000000000 --trigger-price 80
+  nansen trade limit-order list
 
 WALLET:
-  --wallet <name>   Use a named wallet, or "walletconnect" / "wc" for WalletConnect (EVM only).
+  --wallet <name>   Use a named wallet, or "walletconnect" / "wc" for WalletConnect.
                     Defaults to the default local wallet if omitted.
 
 SYMBOLS:
@@ -1518,8 +1524,31 @@ CROSS-CHAIN NOTES (when using --to-chain):
   Typical bridge time: 1-5 minutes`);
       return;
     }
+    if (sub === 'limit-order') {
+      const loSub = args[1];
+      if (!loSub || loSub === 'help') {
+        log(`nansen trade limit-order — Limit order commands (Solana only, Jupiter Trigger V2)
+
+SUBCOMMANDS:
+  create    Place a new limit order
+  list      List your limit orders
+  cancel    Cancel an open order
+  update    Update trigger price or slippage
+
+USAGE:
+  nansen trade limit-order create --from <token> --to <token> --amount <units> --trigger-price <usd>
+  nansen trade limit-order list [--state <open|filled|cancelled|expired>]
+  nansen trade limit-order cancel --order <orderId>
+  nansen trade limit-order update --order <orderId> --trigger-price <usd>`);
+        return;
+      }
+      if (!limitOrderCmds[loSub]) {
+        throw new NansenError(`Unknown limit-order subcommand: ${loSub}. Available: create, list, cancel, update`, ErrorCode.UNKNOWN);
+      }
+      return limitOrderCmds[loSub](args.slice(2), apiInstance, flags, options);
+    }
     if (!tradingCmds[sub]) {
-      throw new NansenError(`Unknown trade subcommand: ${sub}. Available: quote, execute, bridge-status`, ErrorCode.UNKNOWN);
+      throw new NansenError(`Unknown trade subcommand: ${sub}. Available: quote, execute, bridge-status, limit-order`, ErrorCode.UNKNOWN);
     }
     return tradingCmds[sub](args.slice(1), apiInstance, flags, options);
   };
