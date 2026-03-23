@@ -36,9 +36,74 @@ nansen schema [command] [--pretty]    # full command reference (no API key neede
 
 **Trade:** `quote`, `execute` — DEX swaps on Solana and Base.
 
-**Wallet:** `create`, `list`, `show`, `export`, `default`, `delete`, `send` — local keypairs (EVM + Solana).
+**Wallet:** `create`, `list`, `show`, `export`, `default`, `delete`, `send` — local or Privy server-side wallets (EVM + Solana).
 
 Run `nansen schema --pretty` for the full subcommand and field reference.
+
+## Trading
+
+Two-step flow: **quote** then **execute**. Supported chains: `solana`, `base`.
+
+```bash
+# Step 1: Get a quote (amounts in base units — lamports, wei)
+nansen trade quote --chain solana --from SOL --to USDC --amount 1000000000
+nansen trade quote --chain base --from ETH --to USDC --amount 1000000000000000000
+
+# Step 2: Execute the quote
+nansen trade execute --quote <quoteId>
+```
+
+| Option | Description |
+|--------|-------------|
+| `--chain <chain>` | `solana` or `base` |
+| `--from <symbol\|address>` | Input token (`SOL`, `USDC`, or raw address) |
+| `--to <symbol\|address>` | Output token |
+| `--amount <units>` | Amount in **base units** (lamports, wei) |
+| `--wallet <name>` | Wallet to use (default: default wallet) |
+| `--slippage <pct>` | Slippage tolerance as decimal (e.g. `0.03` for 3%) |
+| `--auto-slippage` | Auto slippage calculation |
+| `--swap-mode <mode>` | `exactIn` (default) or `exactOut` |
+| `--quote <id>` | Quote ID (for `execute`) |
+| `--no-simulate` | Skip pre-broadcast simulation (for `execute`) |
+
+Common symbols resolve automatically: `SOL`, `ETH`, `USDC`, `USDT`, `WETH`, `WSOL`.
+
+> A wallet is required even for quotes — the trading API builds transactions specific to the sender address.
+
+## Wallet
+
+### Local wallets (default)
+
+```bash
+nansen wallet create --name my-wallet              # generates EVM + Solana keypair
+nansen wallet list                                  # list all wallets
+nansen wallet show <name>                           # show addresses
+nansen wallet export <name>                         # export private keys
+nansen wallet default <name>                        # set default wallet
+nansen wallet send --wallet <name> --to <addr> --amount <n> --chain <chain>
+nansen wallet delete <name>
+```
+
+Local wallets are encrypted with a password (AES-256-GCM + scrypt). Set `NANSEN_WALLET_PASSWORD` to avoid interactive prompts.
+
+### Privy wallets (server-side)
+
+Server-side wallets via [Privy](https://www.privy.io) — no password, no local key storage. Ideal for agents.
+
+```bash
+nansen wallet create --name agent-wallet --provider privy
+```
+
+**Required env vars:**
+
+| Variable | Description |
+|----------|-------------|
+| `PRIVY_APP_ID` | Privy application ID |
+| `PRIVY_APP_SECRET` | Privy application secret |
+
+Get credentials at [dashboard.privy.io](https://dashboard.privy.io). Or set `NANSEN_WALLET_PROVIDER=privy` to default all `wallet create` calls to Privy.
+
+Privy wallets work with all commands (`trade`, `send`, `list`, `show`, `delete`). The CLI detects the provider automatically.
 
 ## Key Options
 
