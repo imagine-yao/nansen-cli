@@ -10,6 +10,7 @@ import { formatAlertsTable, buildAlertsCommands } from './commands/alerts.js';
 import { resolveAddress, isEnsName } from './ens.js';
 import fs from 'fs';
 import { getUpdateNotification, getUpgradeNotice, scheduleUpdateCheck } from './update-check.js';
+import { refreshCostMapIfStale, getCostForEndpoint } from './cost-cache.js';
 import { trackCommandSucceeded, trackCommandFailed } from './telemetry.js';
 import { createRequire } from 'module';
 import * as readline from 'readline';
@@ -1513,6 +1514,11 @@ export function generateSubcommandHelp(command, subcommand, prefix = null) {
     lines.push(`Params (* required): ${params.join(', ')}`);
   }
 
+  if (subSchema.endpoint) {
+    const cost = getCostForEndpoint(subSchema.endpoint);
+    if (cost) lines.push(`Cost: ${cost.free} credit${cost.free === 1 ? '' : 's'} (Free tier) / ${cost.pro} credit${cost.pro === 1 ? '' : 's'} (Pro tier)`);
+  }
+
   if (subSchema.returns?.length) {
     lines.push(`Returns: ${subSchema.returns.join(', ')}`);
   }
@@ -1583,6 +1589,7 @@ export async function runCLI(rawArgs, deps = {}) {
   }
 
   if (command === 'help' || flags.help || flags.h) {
+    await refreshCostMapIfStale();
     // Check for subcommand-specific help: nansen <command> <subcommand> --help
     if (flags.help || flags.h) {
       // Handle 'research <category> <sub> --help' (3-level)
