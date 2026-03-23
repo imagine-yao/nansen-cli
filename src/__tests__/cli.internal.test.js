@@ -3919,7 +3919,7 @@ describe('trade command routing', () => {
 });
 
 describe('deprecation warnings', () => {
-  it('should warn for deprecated research commands', async () => {
+  it('should NOT warn for deprecated research commands (warnings limited to help output)', async () => {
     const errors = [];
     const deps = {
       output: () => {},
@@ -3930,11 +3930,10 @@ describe('deprecation warnings', () => {
       }
     };
     await runCLI(['smart-money', 'netflow'], deps);
-    expect(errors.some(e => e.includes('deprecated'))).toBe(true);
-    expect(errors.some(e => e.includes('nansen research smart-money'))).toBe(true);
+    expect(errors.some(e => e.includes('deprecated'))).toBe(false);
   });
 
-  it('should warn for deprecated trade commands', async () => {
+  it('should NOT warn for deprecated trade commands (warnings limited to help output)', async () => {
     const errors = [];
     const deps = {
       output: () => {},
@@ -3942,8 +3941,7 @@ describe('deprecation warnings', () => {
       exit: () => {}
     };
     await runCLI(['quote'], deps);
-    expect(errors.some(e => e.includes('deprecated'))).toBe(true);
-    expect(errors.some(e => e.includes('nansen trade quote'))).toBe(true);
+    expect(errors.some(e => e.includes('deprecated'))).toBe(false);
   });
 
   it('should not warn for new research path', async () => {
@@ -3985,8 +3983,35 @@ describe('deprecation warnings', () => {
     };
     // quote with no args shows its help; confirms handler was reached
     const result = await runCLI(['quote'], deps);
-    expect(errors.some(e => e.includes('nansen trade quote'))).toBe(true);
+    // No deprecation warnings should be emitted (limited to help output only)
+    expect(errors.some(e => e.includes('deprecated'))).toBe(false);
     expect(result.type).toBe('no-output');
+  });
+
+  it('should show deprecation note in help output for deprecated research commands', async () => {
+    const outputs = [];
+    const deps = {
+      output: (msg) => outputs.push(msg),
+      errorOutput: () => {},
+      exit: () => {}
+    };
+    await runCLI(['smart-money', '--help'], deps);
+    const combined = outputs.join('\n');
+    expect(combined).toContain('deprecated');
+    expect(combined).toContain('nansen research smart-money');
+  });
+
+  it('should show deprecation note in subcommand help for deprecated research commands', async () => {
+    const outputs = [];
+    const deps = {
+      output: (msg) => outputs.push(msg),
+      errorOutput: () => {},
+      exit: () => {}
+    };
+    await runCLI(['smart-money', 'netflow', '--help'], deps);
+    const combined = outputs.join('\n');
+    expect(combined).toContain('deprecated');
+    expect(combined).toContain('nansen research smart-money');
   });
 });
 
