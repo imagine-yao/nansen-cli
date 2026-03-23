@@ -77,47 +77,39 @@ function createTestWallet(name = 'test-wallet') {
 
 // ============= JWT Caching (OS Keychain) =============
 
-// We mock execFileSync to simulate keychain behavior in tests.
-// This avoids touching the real OS keychain during test runs.
-vi.mock('child_process', async (importOriginal) => {
+// Mock keychain.js to use in-memory store instead of real OS keychain.
+// We also need child_process mocked for walletconnect.
+vi.mock('child_process', () => ({
+  execFile: vi.fn(),
+  execFileSync: vi.fn(),
+}));
+
+let mockKeychainStore = {};
+
+vi.mock('../keychain.js', async (importOriginal) => {
   const original = await importOriginal();
   return {
     ...original,
-    execFile: vi.fn(), // for walletconnect mock
-    execFileSync: vi.fn(), // for keychain mock
+    keychainStoreValue: vi.fn((account, value) => {
+      mockKeychainStore[account] = value;
+      return true;
+    }),
+    keychainRetrieveValue: vi.fn((account) => {
+      return mockKeychainStore[account] || null;
+    }),
   };
 });
 
-import { execFileSync } from 'child_process';
-
-// In-memory keychain store for tests
-let keychainStore = {};
+import { keychainStoreValue, keychainRetrieveValue } from '../keychain.js';
 
 function setupKeychainMock() {
-  keychainStore = {};
-  execFileSync.mockImplementation((cmd, args, opts) => {
-    // macOS security add-generic-password
-    if (cmd === '/usr/bin/security' && args[0] === 'add-generic-password') {
-      const sIdx = args.indexOf('-s');
-      const aIdx = args.indexOf('-a');
-      const wIdx = args.indexOf('-w');
-      const service = args[sIdx + 1];
-      const account = args[aIdx + 1];
-      const value = args[wIdx + 1];
-      keychainStore[`${service}:${account}`] = value;
-      return Buffer.from('');
-    }
-    // macOS security find-generic-password
-    if (cmd === '/usr/bin/security' && args[0] === 'find-generic-password') {
-      const sIdx = args.indexOf('-s');
-      const aIdx = args.indexOf('-a');
-      const service = args[sIdx + 1];
-      const account = args[aIdx + 1];
-      const value = keychainStore[`${service}:${account}`];
-      if (!value) throw new Error('Item not found');
-      return Buffer.from(value + '\n');
-    }
-    throw new Error(`Unexpected execFileSync call: ${cmd} ${args.join(' ')}`);
+  mockKeychainStore = {};
+  keychainStoreValue.mockImplementation((account, value) => {
+    mockKeychainStore[account] = value;
+    return true;
+  });
+  keychainRetrieveValue.mockImplementation((account) => {
+    return mockKeychainStore[account] || null;
   });
 }
 
@@ -136,9 +128,8 @@ describe('JWT caching (keychain)', () => {
   });
 
   it('loadCachedToken returns null when token is expired', () => {
-    // Manually inject expired data into keychain store
-    const key = 'nansen-cli:limit-order-jwt:pubkey';
-    keychainStore[key] = JSON.stringify({
+    // Manually inject expired data
+    mockKeychainStore['limit-order-jwt:pubkey'] = JSON.stringify({
       walletPubkey: 'pubkey',
       token: 'expired-token',
       expiresAt: Date.now() - 1000,
@@ -147,8 +138,7 @@ describe('JWT caching (keychain)', () => {
   });
 
   it('loadCachedToken returns null when within 5-min buffer of expiry', () => {
-    const key = 'nansen-cli:limit-order-jwt:pubkey';
-    keychainStore[key] = JSON.stringify({
+    mockKeychainStore['limit-order-jwt:pubkey'] = JSON.stringify({
       walletPubkey: 'pubkey',
       token: 'almost-expired-token',
       expiresAt: Date.now() + 60_000, // 1 minute left, within 5-min buffer
@@ -169,7 +159,7 @@ describe('JWT caching (keychain)', () => {
   });
 
   it('loadCachedToken returns null gracefully when keychain unavailable', () => {
-    execFileSync.mockImplementation(() => { throw new Error('keychain unavailable'); });
+    keychainRetrieveValue.mockImplementation(() => null);
     expect(loadCachedToken('pubkey')).toBeNull();
   });
 });

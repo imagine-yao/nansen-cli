@@ -30,7 +30,7 @@ function getCredentialsPath() {
 
 // ============= OS Keychain =============
 
-function keychainStore(password) {
+function keychainStore(password, account = ACCOUNT) {
   try {
     if (process.platform === 'darwin') {
       // macOS `security` CLI requires -w <password> as argv — no stdin mode.
@@ -39,7 +39,7 @@ function keychainStore(password) {
       execFileSync('/usr/bin/security', [
         'add-generic-password',
         '-s', SERVICE,
-        '-a', ACCOUNT,
+        '-a', account,
         '-w', password,
         '-U',
       ], { timeout: TIMEOUT_MS, stdio: 'pipe' });
@@ -51,7 +51,7 @@ function keychainStore(password) {
         'store',
         '--label', SERVICE,
         'service', SERVICE,
-        'account', ACCOUNT,
+        'account', account,
       ], { input: password, timeout: TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
       return true;
     }
@@ -64,13 +64,13 @@ function keychainStore(password) {
   }
 }
 
-function keychainRetrieve() {
+function keychainRetrieve(account = ACCOUNT) {
   try {
     if (process.platform === 'darwin') {
       const result = execFileSync('/usr/bin/security', [
         'find-generic-password',
         '-s', SERVICE,
-        '-a', ACCOUNT,
+        '-a', account,
         '-w',
       ], { timeout: TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
       const pw = result.toString().trim();
@@ -81,7 +81,7 @@ function keychainRetrieve() {
       const result = execFileSync('secret-tool', [
         'lookup',
         'service', SERVICE,
-        'account', ACCOUNT,
+        'account', account,
       ], { timeout: TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
       const pw = result.toString().trim();
       return pw || null;
@@ -226,4 +226,25 @@ export function deleteCredentialsFile() {
  */
 export function resolvePassword() {
   return retrievePassword().password;
+}
+
+// ============= Generic Keychain Access =============
+
+/**
+ * Store a value in the OS keychain under a custom account name.
+ * @param {string} account - Unique account identifier
+ * @param {string} value - Value to store
+ * @returns {boolean} true if stored successfully
+ */
+export function keychainStoreValue(account, value) {
+  return keychainStore(value, account);
+}
+
+/**
+ * Retrieve a value from the OS keychain by account name.
+ * @param {string} account - Account identifier used during storage
+ * @returns {string|null}
+ */
+export function keychainRetrieveValue(account) {
+  return keychainRetrieve(account);
 }

@@ -10,12 +10,11 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { execFileSync } from 'child_process';
 import { base58Encode, exportWallet, getWalletConfig, showWallet, listWallets } from './wallet.js';
 import { signEd25519, base58Decode } from './transfer.js';
 import { signSolanaTransaction, resolveTokenAddress, validateBaseUnitAmount } from './trading.js';
 import { getWalletConnectAddress, sendSolanaTransactionViaWalletConnect, signSolanaMessageViaWalletConnect } from './walletconnect-trading.js';
-import { retrievePassword } from './keychain.js';
+import { retrievePassword, keychainStoreValue, keychainRetrieveValue } from './keychain.js';
 
 // ============= Constants =============
 
@@ -24,9 +23,6 @@ const LO_PREFIX = '/limit-order/v2';
 const SOLSCAN_TX_URL = 'https://solscan.io/tx/';
 
 // ============= JWT Auth & Caching (OS Keychain) =============
-
-const KEYCHAIN_SERVICE = 'nansen-cli';
-const KEYCHAIN_TIMEOUT_MS = 5000;
 
 /**
  * Build a keychain account name scoped to a wallet pubkey.
@@ -48,33 +44,7 @@ export function saveCachedToken(walletPubkey, token) {
     // 23-hour TTL provides 1-hour safety margin against server's 24-hour JWT
     expiresAt: Date.now() + 23 * 3600 * 1000,
   });
-  const account = keychainAccount(walletPubkey);
-
-  try {
-    if (process.platform === 'darwin') {
-      execFileSync('/usr/bin/security', [
-        'add-generic-password',
-        '-s', KEYCHAIN_SERVICE,
-        '-a', account,
-        '-w', data,
-        '-U', // Update if exists
-      ], { timeout: KEYCHAIN_TIMEOUT_MS, stdio: 'pipe' });
-      return true;
-    }
-
-    if (process.platform === 'linux') {
-      execFileSync('secret-tool', [
-        'store',
-        '--label', `${KEYCHAIN_SERVICE} limit-order JWT`,
-        'service', KEYCHAIN_SERVICE,
-        'account', account,
-      ], { input: data, timeout: KEYCHAIN_TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
-      return true;
-    }
-  } catch {
-    // Keychain unavailable — token won't be cached, but operation continues
-  }
-  return false;
+  return keychainStoreValue(keychainAccount(walletPubkey), data);
 }
 
 /**
@@ -82,27 +52,8 @@ export function saveCachedToken(walletPubkey, token) {
  * Returns the token string if valid and not expired, null otherwise.
  */
 export function loadCachedToken(walletPubkey) {
-  const account = keychainAccount(walletPubkey);
-
   try {
-    let raw;
-    if (process.platform === 'darwin') {
-      raw = execFileSync('/usr/bin/security', [
-        'find-generic-password',
-        '-s', KEYCHAIN_SERVICE,
-        '-a', account,
-        '-w',
-      ], { timeout: KEYCHAIN_TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
-    } else if (process.platform === 'linux') {
-      raw = execFileSync('secret-tool', [
-        'lookup',
-        'service', KEYCHAIN_SERVICE,
-        'account', account,
-      ], { timeout: KEYCHAIN_TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
-    } else {
-      return null;
-    }
-
+    const raw = keychainRetrieveValue(keychainAccount(walletPubkey));
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (data.walletPubkey !== walletPubkey) return null;
