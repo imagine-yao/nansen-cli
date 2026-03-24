@@ -30,7 +30,7 @@ function getCredentialsPath() {
 
 // ============= OS Keychain =============
 
-function keychainStore(password, account = ACCOUNT) {
+function keychainStore(password) {
   try {
     if (process.platform === 'darwin') {
       // macOS `security` CLI requires -w <password> as argv — no stdin mode.
@@ -39,7 +39,7 @@ function keychainStore(password, account = ACCOUNT) {
       execFileSync('/usr/bin/security', [
         'add-generic-password',
         '-s', SERVICE,
-        '-a', account,
+        '-a', ACCOUNT,
         '-w', password,
         '-U',
       ], { timeout: TIMEOUT_MS, stdio: 'pipe' });
@@ -51,7 +51,7 @@ function keychainStore(password, account = ACCOUNT) {
         'store',
         '--label', SERVICE,
         'service', SERVICE,
-        'account', account,
+        'account', ACCOUNT,
       ], { input: password, timeout: TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
       return true;
     }
@@ -64,13 +64,13 @@ function keychainStore(password, account = ACCOUNT) {
   }
 }
 
-function keychainRetrieve(account = ACCOUNT) {
+function keychainRetrieve() {
   try {
     if (process.platform === 'darwin') {
       const result = execFileSync('/usr/bin/security', [
         'find-generic-password',
         '-s', SERVICE,
-        '-a', account,
+        '-a', ACCOUNT,
         '-w',
       ], { timeout: TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
       const pw = result.toString().trim();
@@ -81,7 +81,7 @@ function keychainRetrieve(account = ACCOUNT) {
       const result = execFileSync('secret-tool', [
         'lookup',
         'service', SERVICE,
-        'account', account,
+        'account', ACCOUNT,
       ], { timeout: TIMEOUT_MS, stdio: ['pipe', 'pipe', 'pipe'] });
       const pw = result.toString().trim();
       return pw || null;
