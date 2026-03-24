@@ -873,6 +873,35 @@
           ]
         }
       }
+    },
+    "agent": {
+      "description": "Nansen AI research agent \u2014 ask questions about wallets, tokens, and on-chain activity",
+      "options": {
+        "expert": {
+          "type": "boolean",
+          "description": "Use expert mode (deeper analysis, slower). Default: fast mode."
+        },
+        "conversation-id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Continue a previous conversation by passing its UUID v4 ID"
+        },
+        "json": {
+          "type": "boolean",
+          "description": "Output raw JSON (conversation_id, mode, text, tool_calls) instead of formatted text"
+        }
+      },
+      "examples": [
+        "nansen agent \"What are the top smart money inflows on Ethereum today?\"",
+        "nansen agent \"Analyze wallet 0xd8dA...6045\" --expert",
+        "nansen agent \"Tell me more\" --conversation-id <id>"
+      ],
+      "returns": [
+        "conversation_id",
+        "mode",
+        "text",
+        "tool_calls"
+      ]
     }
   },
   "globalOptions": {

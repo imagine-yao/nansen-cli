@@ -409,6 +409,25 @@ questions:
       and must be converted.
     skill: nansen-trading
 
+  # Trading: must use `nansen trade`, not `nansen agent` (agent can't execute trades)
+  - id: trade_not_agent
+    question: Buy 0.1 ETH of USDC on Base
+    expected_commands:
+      - nansen trade quote
+    expected_fragments:
+      - "trade quote"
+      - "--chain"
+      - "base"
+      - "--from"
+      - "--to"
+      - "--amount"
+    rejected_fragments:
+      - "nansen agent"
+    notes: >
+      The agent subcommand cannot execute trades — it gives app UI instructions
+      instead. Trading requests must always route to `nansen trade quote`.
+    skill: nansen-trading
+
   # Web search: multi-query (skill-specific pattern)
   - id: web_multi_search
     question: Search for both "ethereum ETF approval" and "solana ETF filing" at the same time
