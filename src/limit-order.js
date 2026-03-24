@@ -407,17 +407,38 @@ function formatOrderStatus(status) {
   return map[status] || status;
 }
 
+// Reverse lookup: address → symbol for known Solana tokens
+const KNOWN_SOLANA_TOKENS = {
+  'So11111111111111111111111111111111111111112': 'SOL',
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
+};
+
+function tokenLabel(address) {
+  if (!address) return '?';
+  const symbol = KNOWN_SOLANA_TOKENS[address];
+  return symbol ? `${symbol} (${address})` : address;
+}
+
+function formatTimestamp(ts) {
+  if (!ts) return '?';
+  const num = Number(ts);
+  if (isNaN(num)) return ts;
+  const date = new Date(num);
+  return `${date.toLocaleString()} (${date.toISOString()})`;
+}
+
 function formatOrder(order, index) {
   const lines = [];
   const label = index !== undefined ? `  Order #${index + 1}` : '  Order';
   lines.push(`${label} (${order.id})`);
   lines.push(`    Status:          ${formatOrderStatus(order.status)}`);
-  lines.push(`    Input:           ${order.inputAmount} → ${order.inputMint?.slice(0, 12)}...`);
-  lines.push(`    Output:          ${order.outputMint?.slice(0, 12)}...`);
-  lines.push(`    Trigger:         $${order.triggerPriceUsd} (${order.triggerCondition} on ${order.triggerMint?.slice(0, 12)}...)`);
+  lines.push(`    Sell:            ${order.inputAmount} ${tokenLabel(order.inputMint)}`);
+  lines.push(`    Buy:             ${tokenLabel(order.outputMint)}`);
+  lines.push(`    Trigger:         ${order.triggerCondition} $${order.triggerPriceUsd} on ${tokenLabel(order.triggerMint)}`);
   if (order.slippageBps != null) lines.push(`    Slippage:        ${order.slippageBps} bps`);
-  lines.push(`    Created:         ${order.createdAt}`);
-  if (order.expiresAt) lines.push(`    Expires:         ${order.expiresAt}`);
+  lines.push(`    Created:         ${formatTimestamp(order.createdAt)}`);
+  if (order.expiresAt) lines.push(`    Expires:         ${formatTimestamp(order.expiresAt)}`);
   if (order.fills?.length > 0) {
     lines.push(`    Fills:           ${order.fills.length}`);
     for (const fill of order.fills) {
@@ -548,9 +569,15 @@ EXAMPLES:
         const token = await authenticate(pubkey, walletType, walletInfo, log);
 
         // 3. Check vault, auto-register if needed
-        // Backend returns { vault: null } when no vault exists, { vault: { ... } } otherwise
-        const vaultInfo = await getVault(token, pubkey);
-        if (!vaultInfo?.vault) {
+        // Backend returns { vaultPubkey: "..." } when vault exists, or throws/returns empty when not
+        let hasVault = false;
+        try {
+          const vaultInfo = await getVault(token, pubkey);
+          hasVault = !!vaultInfo?.vaultPubkey;
+        } catch {
+          // No vault found
+        }
+        if (!hasVault) {
           log('  Registering vault for first-time use...');
           await registerVault(token);
         }

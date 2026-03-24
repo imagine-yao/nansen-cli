@@ -205,9 +205,9 @@ describe('API client', () => {
   });
 
   it('getVault sends correct query params', async () => {
-    mockFetchResponse({ vault: { vaultAddress: 'vault123', userPubkey: 'pub1' } });
+    mockFetchResponse({ vaultPubkey: 'vault123', userPubkey: 'pub1' });
     const result = await getVault('jwt-token', 'pub1');
-    expect(result.vault.vaultAddress).toBe('vault123');
+    expect(result.vaultPubkey).toBe('vault123');
 
     const [url, opts] = global.fetch.mock.calls[0];
     expect(url).toContain('userPubkey=pub1');
@@ -525,7 +525,7 @@ describe('buildLimitOrderCommands', () => {
       mockFetchSequence([
         { body: { challenge: 'sign this' } },
         { body: { token: 'jwt-123' } },
-        { body: { vault: { vaultAddress: 'vault1' } } },
+        { body: { vaultPubkey: 'vault1', userPubkey: 'pub1' } },
         { body: { transaction: buildFakeBase64Tx(), requestId: 'dep-1' } },
         { body: { id: 'order-1', txSignature: 'sig-1' }, status: 201 },
       ]);
@@ -564,7 +564,7 @@ describe('buildLimitOrderCommands', () => {
       mockFetchSequence([
         { body: { challenge: 'sign this' } },
         { body: { token: 'jwt-123' } },
-        { body: { vault: { vaultAddress: 'vault123', userPubkey: 'pub1' } } },
+        { body: { vaultPubkey: 'vault123', userPubkey: 'pub1' } },
         { body: { transaction: buildFakeBase64Tx(), requestId: 'dep-req-1' } },
         { body: { id: 'order-abc', txSignature: 'sig-xyz' }, status: 201 },
       ]);
@@ -602,8 +602,8 @@ describe('buildLimitOrderCommands', () => {
       mockFetchSequence([
         { body: { challenge: 'sign this' } },
         { body: { token: 'jwt-123' } },
-        { body: { vault: null } }, // getVault returns no vault
-        { body: { vault: { vaultAddress: 'newVault', userPubkey: 'pub1' } }, status: 201 }, // registerVault
+        { body: { message: 'Vault not found' }, status: 404 }, // getVault returns no vault
+        { body: { vaultPubkey: 'newVault', userPubkey: 'pub1' }, status: 201 }, // registerVault
         { body: { transaction: buildFakeBase64Tx(), requestId: 'dep-1' } },
         { body: { id: 'order-1', txSignature: 'sig-1' }, status: 201 },
       ]);
