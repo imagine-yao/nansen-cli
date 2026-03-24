@@ -943,7 +943,7 @@
                   "required": true,
                   "description": "Token whose price triggers the order (e.g. SOL)"
                 },
-                "slippage": {
+                "slippage-bps": {
                   "type": "number",
                   "description": "Slippage tolerance in basis points (e.g. 50 = 0.5%)"
                 },
@@ -1026,7 +1026,7 @@
                   "type": "number",
                   "description": "New trigger price in USD"
                 },
-                "slippage": {
+                "slippage-bps": {
                   "type": "number",
                   "description": "New slippage in basis points (0-10000)"
                 },

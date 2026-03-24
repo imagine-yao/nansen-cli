@@ -454,7 +454,7 @@ function formatOrder(order, index) {
   lines.push(`    Sell:            ${formatAmount(order.inputAmount, order.inputMint)}`);
   lines.push(`    Buy:             ${tokenLabel(order.outputMint)}`);
   lines.push(`    Trigger:         ${order.triggerCondition} $${order.triggerPriceUsd} on ${tokenLabel(order.triggerMint)}`);
-  if (order.slippageBps != null) lines.push(`    Slippage:        ${order.slippageBps} bps`);
+  lines.push(`    Slippage:        ${order.slippageBps != null ? `${order.slippageBps} bps` : 'auto'}`);
   lines.push(`    Created:         ${formatTimestamp(order.createdAt)}`);
   if (order.expiresAt) lines.push(`    Expires:         ${formatTimestamp(order.expiresAt)}`);
   if (order.fills?.length > 0) {
@@ -484,7 +484,7 @@ export function buildLimitOrderCommands(deps = {}) {
       const triggerPrice = options['trigger-price'];
       const triggerCondition = options['trigger-condition'];
       const triggerMintRaw = options['trigger-mint'];
-      const slippageBps = options.slippage != null ? Number(options.slippage) : undefined;
+      const slippageBps = options['slippage-bps'] != null ? Number(options['slippage-bps']) : undefined;
       const expiresStr = options.expires || '30d';
       const walletName = options.wallet;
 
@@ -499,7 +499,7 @@ OPTIONS:
   --trigger-mint <symbol|addr>   Token whose price triggers the order (e.g. SOL)
   --trigger-condition <cond>     "above" or "below"
   --trigger-price <usd>          Trigger price in USD (must be a positive number)
-  --slippage <bps>               Slippage tolerance in basis points (e.g. 50 = 0.5%)
+  --slippage-bps <bps>               Slippage in basis points (100 = 1%), omit for auto
   --expires <duration>           Expiry duration: "24h", "7d", "30d" (default: 30d)
   --wallet <name>                Wallet name (or "walletconnect"/"wc")
 
@@ -787,28 +787,31 @@ EXAMPLES:
     'update': async (args, apiInstance, flags, options) => {
       const orderId = options.order || options['order-id'] || args[0];
       const triggerPrice = options['trigger-price'];
-      const slippageBps = options.slippage;
+      const slippageBps = options['slippage-bps'];
       const walletName = options.wallet;
 
       if (!orderId) {
         log(`
-Usage: nansen trade limit-order update --order <orderId> [--trigger-price <usd>] [--slippage <bps>]
+Usage: nansen trade limit-order update --order <orderId> [--trigger-price <usd>] [--slippage-bps <bps>]
 
 OPTIONS:
   --order <id>            Order ID to update
   --trigger-price <usd>   New trigger price in USD
-  --slippage <bps>        New slippage in basis points
+  --slippage-bps <bps>    Slippage in basis points (100 = 1%)
   --wallet <name>         Wallet name (or "walletconnect"/"wc")
+
+NOTE: Only provided fields are updated. Auto slippage can only be set at creation time
+      (by omitting --slippage-bps from the create command).
 
 EXAMPLES:
   nansen trade limit-order update --order abc123 --trigger-price 85
-  nansen trade limit-order update --order abc123 --slippage 100`);
+  nansen trade limit-order update --order abc123 --slippage-bps 100`);
         exit(1);
         return;
       }
 
       if (triggerPrice == null && slippageBps == null) {
-        log('Error: Provide at least one of --trigger-price or --slippage to update.');
+        log('Error: Provide at least one of --trigger-price or --slippage-bps to update.');
         exit(1);
         return;
       }
@@ -826,7 +829,7 @@ EXAMPLES:
       if (slippageBps != null) {
         const bps = Number(slippageBps);
         if (isNaN(bps) || bps < 0 || bps > 10000) {
-          log('Error: --slippage must be between 0 and 10000 basis points.');
+          log('Error: --slippage-bps must be between 0 and 10000 basis points.');
           exit(1);
           return;
         }

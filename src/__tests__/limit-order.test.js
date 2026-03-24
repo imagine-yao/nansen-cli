@@ -912,7 +912,7 @@ describe('buildLimitOrderCommands', () => {
       ]);
 
       await cmds.update([], null, {}, {
-        order: 'order-1', slippage: '100', wallet: 'lo-update-slip',
+        order: 'order-1', 'slippage-bps': '100', wallet: 'lo-update-slip',
       });
 
       const patchBody = JSON.parse(global.fetch.mock.calls[2][1].body);
@@ -925,7 +925,7 @@ describe('buildLimitOrderCommands', () => {
       const exit = vi.fn();
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
 
-      await cmds.update([], null, {}, { order: 'order-1', slippage: '15000' });
+      await cmds.update([], null, {}, { order: 'order-1', 'slippage-bps': '15000' });
       expect(exit).toHaveBeenCalledWith(1);
       expect(logs.some(l => l.includes('0 and 10000'))).toBe(true);
     });
