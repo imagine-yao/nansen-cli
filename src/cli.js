@@ -1537,7 +1537,7 @@ SUBCOMMANDS:
 
 USAGE:
   nansen trade limit-order create --from <token> --to <token> --amount <units> --trigger-mint <token> --trigger-condition <above|below> --trigger-price <usd>
-  nansen trade limit-order list [--state <open|filled|cancelled|expired>]
+  nansen trade limit-order list [--state <open|filled|cancelled|expired|all>]
   nansen trade limit-order cancel --order <orderId>
   nansen trade limit-order update --order <orderId> --trigger-price <usd>`);
         return;
