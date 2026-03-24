@@ -706,7 +706,10 @@ EXAMPLES:
         }
 
         log(`\nLimit Orders (${result.pagination?.total || orders.length} total):\n`);
-        orders.forEach((order, i) => log(formatOrder(order, i)));
+        orders.forEach((order, i) => {
+          if (i > 0) log('');
+          log(formatOrder(order, i));
+        });
         if (result.pagination && result.pagination.total > offset + orders.length) {
           log(`\n  Showing ${offset + 1}-${offset + orders.length} of ${result.pagination.total}. Use --offset ${offset + orders.length} to see more.`);
         }
