@@ -36,9 +36,34 @@ nansen schema [command] [--pretty]    # full command reference (no API key neede
 
 **Trade:** `quote`, `execute` — DEX swaps on Solana and Base.
 
-**Wallet:** `create`, `list`, `show`, `export`, `default`, `delete`, `send` — local keypairs (EVM + Solana).
+**Wallet:** `create`, `list`, `show`, `export`, `default`, `delete`, `send` — local or Privy server-side wallets (EVM + Solana).
 
 Run `nansen schema --pretty` for the full subcommand and field reference.
+
+## Trading
+
+DEX swaps on `solana` and `base`. Two-step: quote then execute.
+
+```bash
+nansen trade quote --chain solana --from SOL --to USDC --amount 1000000000
+nansen trade execute --quote <quoteId>
+```
+
+Amounts are in base units (lamports, wei). Common symbols (`SOL`, `ETH`, `USDC`, `USDT`) resolve automatically. A wallet is required — set one with `nansen wallet default <name>`.
+
+## Wallet
+
+```bash
+nansen wallet create --name my-wallet        # local keypair (EVM + Solana)
+nansen wallet create --name my-wallet --provider privy  # server-side via Privy
+nansen wallet list
+nansen wallet default <name>
+nansen wallet send --wallet <name> --to <addr> --amount <n> --chain <chain>
+```
+
+**Local wallets** are password-encrypted. Set `NANSEN_WALLET_PASSWORD` to skip the prompt.
+
+**Privy wallets** are server-side — no password, no local key storage. Requires `PRIVY_APP_ID` and `PRIVY_APP_SECRET` env vars. Get credentials at [dashboard.privy.io](https://dashboard.privy.io).
 
 ## Key Options
 
