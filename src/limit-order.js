@@ -9,11 +9,12 @@
 import fs from 'fs';
 import path from 'path';
 import { base58Encode, exportWallet, getWalletConfig, showWallet } from './wallet.js';
-import { signEd25519, base58Decode } from './transfer.js';
-import { signSolanaTransaction, resolveTokenAddress, validateBaseUnitAmount } from './trading.js';
+import { signEd25519, base58Decode, parseAmount, getTokenInfo } from './transfer.js';
+import { signSolanaTransaction, resolveTokenAddress } from './trading.js';
 import { validateTokenAddress } from './api.js';
 import { getWalletConnectAddress, sendSolanaTransactionViaWalletConnect, signSolanaMessageViaWalletConnect } from './walletconnect-trading.js';
 import { retrievePassword } from './keychain.js';
+import { CHAIN_RPCS } from './rpc-urls.js';
 
 // ============= Constants =============
 
@@ -407,17 +408,34 @@ function formatOrderStatus(status) {
   return map[status] || status;
 }
 
-// Reverse lookup: address → symbol for known Solana tokens
+// Reverse lookup: address → { symbol, decimals } for known Solana tokens
 const KNOWN_SOLANA_TOKENS = {
-  'So11111111111111111111111111111111111111112': 'SOL',
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
-  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
+  'So11111111111111111111111111111111111111112': { symbol: 'SOL', decimals: 9 },
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', decimals: 6 },
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', decimals: 6 },
 };
 
 function tokenLabel(address) {
   if (!address) return '?';
-  const symbol = KNOWN_SOLANA_TOKENS[address];
-  return symbol ? `${symbol} (${address})` : address;
+  const info = KNOWN_SOLANA_TOKENS[address];
+  return info ? `${info.symbol} (${address})` : address;
+}
+
+/**
+ * Format a base-unit amount to human-readable (e.g. 116000000 SOL → "0.116 SOL").
+ * Falls back to raw amount for unknown tokens.
+ */
+function formatAmount(amount, mintAddress) {
+  if (!amount) return '?';
+  const info = KNOWN_SOLANA_TOKENS[mintAddress];
+  if (!info) return `${amount} ${mintAddress || '?'}`;
+  const raw = BigInt(amount);
+  const divisor = BigInt(10 ** info.decimals);
+  const whole = raw / divisor;
+  const frac = raw % divisor;
+  const fracStr = frac.toString().padStart(info.decimals, '0').replace(/0+$/, '');
+  const humanAmount = fracStr ? `${whole}.${fracStr}` : `${whole}`;
+  return `${humanAmount} ${info.symbol} (${amount} base units)`;
 }
 
 function formatTimestamp(ts) {
@@ -433,7 +451,7 @@ function formatOrder(order, index) {
   const label = index !== undefined ? `  Order #${index + 1}` : '  Order';
   lines.push(`${label} (${order.id})`);
   lines.push(`    Status:          ${formatOrderStatus(order.status)}`);
-  lines.push(`    Sell:            ${order.inputAmount} ${tokenLabel(order.inputMint)}`);
+  lines.push(`    Sell:            ${formatAmount(order.inputAmount, order.inputMint)}`);
   lines.push(`    Buy:             ${tokenLabel(order.outputMint)}`);
   lines.push(`    Trigger:         ${order.triggerCondition} $${order.triggerPriceUsd} on ${tokenLabel(order.triggerMint)}`);
   if (order.slippageBps != null) lines.push(`    Slippage:        ${order.slippageBps} bps`);
@@ -472,12 +490,12 @@ export function buildLimitOrderCommands(deps = {}) {
 
       if (!from || !to || !amount || triggerPrice == null || !triggerMintRaw || !triggerCondition) {
         log(`
-Usage: nansen trade limit-order create --from <token> --to <token> --amount <baseUnits> --trigger-mint <token> --trigger-condition <above|below> --trigger-price <usd>
+Usage: nansen trade limit-order create --from <token> --to <token> --amount <amount> --trigger-mint <token> --trigger-condition <above|below> --trigger-price <usd>
 
 OPTIONS:
   --from <symbol|address>        Token to sell (symbol like SOL, USDC or address)
   --to <symbol|address>          Token to buy (symbol like USDC, SOL or address)
-  --amount <units>               Amount in BASE UNITS (e.g. lamports)
+  --amount <amount>              Amount to sell in token units (e.g. 1.5 for 1.5 SOL, 80 for 80 USDC)
   --trigger-mint <symbol|addr>   Token whose price triggers the order (e.g. SOL)
   --trigger-condition <cond>     "above" or "below"
   --trigger-price <usd>          Trigger price in USD (must be a positive number)
@@ -487,9 +505,9 @@ OPTIONS:
 
 EXAMPLES:
   # Sell 1 SOL for USDC when SOL drops below $80
-  nansen trade limit-order create --from SOL --to USDC --amount 1000000000 --trigger-mint SOL --trigger-condition below --trigger-price 80
+  nansen trade limit-order create --from SOL --to USDC --amount 1 --trigger-mint SOL --trigger-condition below --trigger-price 80
   # Buy SOL with 80 USDC when SOL goes above $100
-  nansen trade limit-order create --from USDC --to SOL --amount 80000000 --trigger-mint SOL --trigger-condition above --trigger-price 100`);
+  nansen trade limit-order create --from USDC --to SOL --amount 80 --trigger-mint SOL --trigger-condition above --trigger-price 100`);
         exit(1);
         return;
       }
@@ -508,9 +526,27 @@ EXAMPLES:
         return;
       }
 
-      const amountError = validateBaseUnitAmount(amount);
-      if (amountError) {
-        log(`Error: ${amountError}`);
+      // Amount is always in human-readable token units (e.g. 1.5 = 1.5 SOL)
+      // Converted to base units (lamports) internally
+      let amountBaseUnits;
+      try {
+        const num = Number(amount);
+        if (isNaN(num) || num <= 0) {
+          log('Error: --amount must be a positive number in token units (e.g. 1.5 for 1.5 SOL, 80 for 80 USDC).');
+          exit(1);
+          return;
+        }
+        const fromInfo = KNOWN_SOLANA_TOKENS[from];
+        let decimals;
+        if (fromInfo) {
+          decimals = fromInfo.decimals;
+        } else {
+          const tokenInfo = await getTokenInfo(CHAIN_RPCS.solana, from);
+          decimals = tokenInfo.decimals;
+        }
+        amountBaseUnits = String(parseAmount(String(amount), decimals));
+      } catch (err) {
+        log(`Error: Could not resolve decimals for ${from}: ${err.message}`);
         exit(1);
         return;
       }
@@ -561,7 +597,7 @@ EXAMPLES:
 
         log(`\nCreating limit order on Solana...`);
         log(`  Wallet: ${pubkey}`);
-        log(`  Sell: ${amount} of ${from}`);
+        log(`  Sell: ${formatAmount(amountBaseUnits, from)}`);
         log(`  Buy: ${to}`);
         log(`  Trigger: $${price} (${triggerCondition})`);
 
@@ -588,7 +624,7 @@ EXAMPLES:
           inputMint: from,
           outputMint: to,
           userAddress: pubkey,
-          amount: String(amount),
+          amount: amountBaseUnits,
         });
 
         // 5. Sign deposit transaction
@@ -603,7 +639,7 @@ EXAMPLES:
           depositSignedTx: signedDepositTx,
           userPubkey: pubkey,
           inputMint: from,
-          inputAmount: String(amount),
+          inputAmount: amountBaseUnits,
           outputMint: to,
           triggerMint,
           triggerCondition,

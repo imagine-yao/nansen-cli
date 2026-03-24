@@ -470,7 +470,7 @@ describe('buildLimitOrderCommands', () => {
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '-5',
+        from: 'SOL', to: 'USDC', amount: '1', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '-5',
       });
       expect(exit).toHaveBeenCalledWith(1);
       expect(logs.some(l => l.includes('positive number'))).toBe(true);
@@ -482,7 +482,7 @@ describe('buildLimitOrderCommands', () => {
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL',
+        from: 'SOL', to: 'USDC', amount: '1', 'trigger-mint': 'SOL',
         'trigger-price': '80', 'trigger-condition': 'invalid',
       });
       expect(exit).toHaveBeenCalledWith(1);
@@ -496,7 +496,7 @@ describe('buildLimitOrderCommands', () => {
 
       await cmds.create([], null, {}, {
         from: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-        to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+        to: 'USDC', amount: '1', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
       });
       expect(exit).toHaveBeenCalledWith(1);
       expect(logs.some(l => l.includes('Invalid --from token address'))).toBe(true);
@@ -510,7 +510,7 @@ describe('buildLimitOrderCommands', () => {
       await cmds.create([], null, {}, {
         from: 'SOL',
         to: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-        amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+        amount: '1', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
       });
       expect(exit).toHaveBeenCalledWith(1);
       expect(logs.some(l => l.includes('Invalid --to token address'))).toBe(true);
@@ -534,20 +534,153 @@ describe('buildLimitOrderCommands', () => {
       await cmds.create([], null, {}, {
         from: 'So11111111111111111111111111111111111111112',
         to: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+        amount: '1', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
         wallet: 'lo-addr-test',
       });
       expect(exit).not.toHaveBeenCalled();
       expect(logs.some(l => l.includes('Limit order created'))).toBe(true);
     });
 
-    it('validates amount is base units', async () => {
+    it('rejects non-positive amount', async () => {
       const logs = [];
       const exit = vi.fn();
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1.5', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+        from: 'SOL', to: 'USDC', amount: '-5', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+      expect(logs.some(l => l.includes('positive number'))).toBe(true);
+    });
+
+    // --- Amount parsing: human-readable → base units ---
+
+    /**
+     * Helper: run a full create flow and extract the inputAmount from the API request body.
+     *
+     * This exercises the real amount parsing code path end-to-end:
+     *   user input (e.g. "0.5") → parseAmount() → base units string → sent to createOrder API
+     *
+     * We mock the 5 sequential API calls that the create flow makes:
+     *   [0] POST /auth/challenge   — returns a challenge string
+     *   [1] POST /auth/verify      — returns a JWT token
+     *   [2] GET  /vault            — returns vault info (already registered)
+     *   [3] POST /deposit/craft    — returns an unsigned deposit transaction
+     *   [4] POST /create           — creates the order ← we inspect this call's body
+     *
+     * The mock responses are minimal stubs — only enough to not error.
+     * We then read global.fetch.mock.calls[4] (the 5th call = createOrder)
+     * and parse its JSON body to get the inputAmount that was actually sent.
+     *
+     * ⚠️  If the API call sequence changes (e.g. a new call is added before
+     * createOrder), update the index [4] and the mockFetchSequence array.
+     */
+    async function createAndGetInputAmount(amountStr, fromToken = 'SOL') {
+      const walletName = `lo-amt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      createTestWallet(walletName);
+      const logs = [];
+      const exit = vi.fn();
+      const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
+
+      const CREATE_ORDER_CALL_INDEX = 4;
+      mockFetchSequence([
+        { body: { challenge: 'sign this' } },          // [0] auth/challenge
+        { body: { token: 'jwt-123' } },                 // [1] auth/verify
+        { body: { vaultPubkey: 'vault1', userPubkey: 'pub1' } }, // [2] vault check
+        { body: { transaction: buildFakeBase64Tx(), requestId: 'dep-1' } }, // [3] deposit/craft
+        { body: { id: 'order-1', txSignature: 'sig-1' }, status: 201 },    // [4] createOrder
+      ]);
+
+      await cmds.create([], null, {}, {
+        from: fromToken, to: 'USDC', amount: amountStr,
+        'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+        wallet: walletName,
+      });
+
+      if (exit.mock.calls.length > 0) {
+        throw new Error(`create exited with code ${exit.mock.calls[0][0]}. Logs: ${logs.join(' | ')}`);
+      }
+
+      // Extract the inputAmount from the createOrder API request body
+      const createCall = global.fetch.mock.calls[CREATE_ORDER_CALL_INDEX];
+      const createBody = JSON.parse(createCall[1].body);
+      return createBody.inputAmount;
+    }
+
+    it('converts 1 SOL to 1000000000 base units', async () => {
+      expect(await createAndGetInputAmount('1', 'SOL')).toBe('1000000000');
+    });
+
+    it('converts 0.5 SOL to 500000000 base units', async () => {
+      expect(await createAndGetInputAmount('0.5', 'SOL')).toBe('500000000');
+    });
+
+    it('converts 0.000000001 SOL (1 lamport) correctly', async () => {
+      expect(await createAndGetInputAmount('0.000000001', 'SOL')).toBe('1');
+    });
+
+    it('converts 100 USDC to 100000000 base units (6 decimals)', async () => {
+      expect(await createAndGetInputAmount('100', 'USDC')).toBe('100000000');
+    });
+
+    it('converts 0.01 USDC to 10000 base units', async () => {
+      expect(await createAndGetInputAmount('0.01', 'USDC')).toBe('10000');
+    });
+
+    it('converts 1.5 SOL to 1500000000 base units', async () => {
+      expect(await createAndGetInputAmount('1.5', 'SOL')).toBe('1500000000');
+    });
+
+    it('converts 0.123456789 SOL without floating point error', async () => {
+      // 0.123456789 * 1e9 = 123456789 — must not produce 123456788 or 123456790
+      expect(await createAndGetInputAmount('0.123456789', 'SOL')).toBe('123456789');
+    });
+
+    it('converts 0.1 SOL without floating point error (0.1 is inexact in IEEE 754)', async () => {
+      expect(await createAndGetInputAmount('0.1', 'SOL')).toBe('100000000');
+    });
+
+    it('converts 0.3 USDC without floating point error', async () => {
+      // 0.1 + 0.2 != 0.3 in JS, but string parsing should be exact
+      expect(await createAndGetInputAmount('0.3', 'USDC')).toBe('300000');
+    });
+
+    it('truncates excess decimals beyond token precision (SOL: 9)', async () => {
+      // 0.0000000019 has 10 decimal places; should truncate to 1 lamport
+      expect(await createAndGetInputAmount('0.0000000019', 'SOL')).toBe('1');
+    });
+
+    it('truncates excess decimals beyond token precision (USDC: 6)', async () => {
+      // 0.0000019 has 7 decimal places; should truncate to 1
+      expect(await createAndGetInputAmount('0.0000019', 'USDC')).toBe('1');
+    });
+
+    it('handles whole number without decimal for SOL', async () => {
+      expect(await createAndGetInputAmount('10', 'SOL')).toBe('10000000000');
+    });
+
+    it('handles large amount (1000 SOL)', async () => {
+      expect(await createAndGetInputAmount('1000', 'SOL')).toBe('1000000000000');
+    });
+
+    it('rejects zero amount', async () => {
+      const logs = [];
+      const exit = vi.fn();
+      const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
+      await cmds.create([], null, {}, {
+        from: 'SOL', to: 'USDC', amount: '0',
+        'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it('rejects non-numeric amount', async () => {
+      const logs = [];
+      const exit = vi.fn();
+      const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
+      await cmds.create([], null, {}, {
+        from: 'SOL', to: 'USDC', amount: 'abc',
+        'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
       });
       expect(exit).toHaveBeenCalledWith(1);
     });
@@ -572,7 +705,7 @@ describe('buildLimitOrderCommands', () => {
       await cmds.create([], null, {}, {
         from: 'SOL',
         to: 'USDC',
-        amount: '1000000000',
+        amount: '1',
         'trigger-mint': 'SOL',
         'trigger-condition': 'below',
         'trigger-price': '80',
@@ -609,7 +742,7 @@ describe('buildLimitOrderCommands', () => {
       ]);
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
+        from: 'SOL', to: 'USDC', amount: '1', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
         wallet: 'lo-vault-test',
       });
 
