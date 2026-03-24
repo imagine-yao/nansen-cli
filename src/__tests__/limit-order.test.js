@@ -489,6 +489,58 @@ describe('buildLimitOrderCommands', () => {
       expect(logs.some(l => l.includes('"above" or "below"'))).toBe(true);
     });
 
+    it('rejects EVM token address for --from', async () => {
+      const logs = [];
+      const exit = vi.fn();
+      const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
+
+      await cmds.create([], null, {}, {
+        from: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        to: 'USDC', amount: '1000000000', 'trigger-price': '80',
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+      expect(logs.some(l => l.includes('Invalid --from token address'))).toBe(true);
+    });
+
+    it('rejects EVM token address for --to', async () => {
+      const logs = [];
+      const exit = vi.fn();
+      const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
+
+      await cmds.create([], null, {}, {
+        from: 'SOL',
+        to: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        amount: '1000000000', 'trigger-price': '80',
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+      expect(logs.some(l => l.includes('Invalid --to token address'))).toBe(true);
+    });
+
+    it('accepts valid Solana mint address', async () => {
+      createTestWallet('lo-addr-test');
+      const logs = [];
+      const exit = vi.fn();
+      const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
+
+      mockFetchSequence([
+        { body: { challenge: 'sign this' } },
+        { body: { token: 'jwt-123' } },
+        { body: { vault: { vaultAddress: 'vault1' } } },
+        { body: { transaction: buildFakeBase64Tx(), requestId: 'dep-1' } },
+        { body: { id: 'order-1', txSignature: 'sig-1' }, status: 201 },
+      ]);
+
+      // Use raw Solana mint addresses directly
+      await cmds.create([], null, {}, {
+        from: 'So11111111111111111111111111111111111111112',
+        to: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+        amount: '1000000000', 'trigger-price': '80',
+        wallet: 'lo-addr-test',
+      });
+      expect(exit).not.toHaveBeenCalled();
+      expect(logs.some(l => l.includes('Limit order created'))).toBe(true);
+    });
+
     it('validates amount is base units', async () => {
       const logs = [];
       const exit = vi.fn();

@@ -11,6 +11,7 @@ import path from 'path';
 import { base58Encode, exportWallet, getWalletConfig, showWallet } from './wallet.js';
 import { signEd25519, base58Decode } from './transfer.js';
 import { signSolanaTransaction, resolveTokenAddress, validateBaseUnitAmount } from './trading.js';
+import { validateTokenAddress } from './api.js';
 import { getWalletConnectAddress, sendSolanaTransactionViaWalletConnect, signSolanaMessageViaWalletConnect } from './walletconnect-trading.js';
 import { retrievePassword } from './keychain.js';
 
@@ -470,6 +471,20 @@ EXAMPLES:
         return;
       }
 
+      // Validate token addresses are valid Solana addresses (catches EVM addresses, typos, etc.)
+      const fromValidation = validateTokenAddress(from, 'solana');
+      if (!fromValidation.valid) {
+        log(`Error: Invalid --from token address: ${fromValidation.error}`);
+        exit(1);
+        return;
+      }
+      const toValidation = validateTokenAddress(to, 'solana');
+      if (!toValidation.valid) {
+        log(`Error: Invalid --to token address: ${toValidation.error}`);
+        exit(1);
+        return;
+      }
+
       const amountError = validateBaseUnitAmount(amount);
       if (amountError) {
         log(`Error: ${amountError}`);
@@ -500,6 +515,15 @@ EXAMPLES:
       }
 
       const triggerMint = triggerMintRaw ? resolveTokenAddress(triggerMintRaw, 'solana') : to;
+
+      if (triggerMintRaw) {
+        const tmValidation = validateTokenAddress(triggerMint, 'solana');
+        if (!tmValidation.valid) {
+          log(`Error: Invalid --trigger-mint address: ${tmValidation.error}`);
+          exit(1);
+          return;
+        }
+      }
 
       try {
         // 1. Resolve wallet
@@ -584,6 +608,15 @@ EXAMPLES:
       const offset = options.offset || 0;
       const sort = options.sort;
       const dir = options.dir || 'desc';
+
+      if (mint) {
+        const mintValidation = validateTokenAddress(mint, 'solana');
+        if (!mintValidation.valid) {
+          log(`Error: Invalid --mint address: ${mintValidation.error}`);
+          exit(1);
+          return;
+        }
+      }
 
       try {
         const resolved = await resolveSolanaWallet(walletName, deps);
