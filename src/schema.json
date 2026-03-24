@@ -967,8 +967,7 @@
               "options": {
                 "state": {
                   "type": "string",
-                  "default": "open",
-                  "description": "Filter by state (open, filled, cancelled, expired, all)"
+                  "description": "Filter by state (open, filled, cancelled, expired)"
                 },
                 "mint": {
                   "type": "string",

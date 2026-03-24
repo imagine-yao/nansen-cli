@@ -659,15 +659,13 @@ EXAMPLES:
       } catch (err) {
         log(`Error: ${err.message}`);
         if (err.details) log(`  Details: ${JSON.stringify(err.details)}`);
-        if (err.cause) log(`  Cause: ${err.cause.message || err.cause}`);
         exit(1);
       }
     },
 
     'list': async (args, apiInstance, flags, options) => {
       const walletName = options.wallet;
-      const stateRaw = options.state || 'open';
-      const state = stateRaw === 'all' ? undefined : stateRaw;
+      const state = options.state;
       const mint = options.mint ? resolveTokenAddress(options.mint, 'solana') : undefined;
       const limit = options.limit || 20;
       const offset = options.offset || 0;
@@ -702,7 +700,7 @@ EXAMPLES:
 
         if (orders.length === 0) {
           log('\nNo limit orders found.');
-          log(`  (state: ${stateRaw})`);
+          if (state) log(`  (filtered by state: ${state})`);
           log('');
           return;
         }
