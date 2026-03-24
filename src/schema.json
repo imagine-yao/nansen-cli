@@ -908,7 +908,7 @@
           }
         },
         "limit-order": {
-          "description": "Limit order management (Solana only, Jupiter Trigger V2)",
+          "description": "Limit order management (Solana only)",
           "subcommands": {
             "create": {
               "description": "Place a new limit order",

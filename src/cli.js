@@ -1487,7 +1487,7 @@ SUBCOMMANDS:
   quote          Get a swap quote (price, route, fees)
   execute        Sign and broadcast a quoted swap
   bridge-status  Check cross-chain bridge transaction status
-  limit-order    Limit order management (Solana only, Jupiter Trigger V2)
+  limit-order    Limit order management (Solana only)
 
 USAGE:
   nansen trade quote --chain <chain> --from <token> --to <token> --amount <units> [--wallet <name>]
@@ -1527,7 +1527,7 @@ CROSS-CHAIN NOTES (when using --to-chain):
     if (sub === 'limit-order') {
       const loSub = args[1];
       if (!loSub || loSub === 'help') {
-        log(`nansen trade limit-order — Limit order commands (Solana only, Jupiter Trigger V2)
+        log(`nansen trade limit-order — Limit order commands (Solana only)
 
 SUBCOMMANDS:
   create    Place a new limit order
