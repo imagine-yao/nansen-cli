@@ -228,23 +228,3 @@ export function resolvePassword() {
   return retrievePassword().password;
 }
 
-// ============= Generic Keychain Access =============
-
-/**
- * Store a value in the OS keychain under a custom account name.
- * @param {string} account - Unique account identifier
- * @param {string} value - Value to store
- * @returns {boolean} true if stored successfully
- */
-export function keychainStoreValue(account, value) {
-  return keychainStore(value, account);
-}
-
-/**
- * Retrieve a value from the OS keychain by account name.
- * @param {string} account - Account identifier used during storage
- * @returns {string|null}
- */
-export function keychainRetrieveValue(account) {
-  return keychainRetrieve(account);
-}

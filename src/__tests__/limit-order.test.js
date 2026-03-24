@@ -73,50 +73,25 @@ function createTestWallet(name = 'test-wallet') {
   return createWallet(name, null);
 }
 
-// ============= JWT Caching (OS Keychain) =============
-
-// Mock keychain.js to use in-memory store instead of real OS keychain.
-// We also need child_process mocked for walletconnect.
+// We need child_process mocked for walletconnect.
 vi.mock('child_process', () => ({
   execFile: vi.fn(),
   execFileSync: vi.fn(),
 }));
 
-let mockKeychainStore = {};
-
-vi.mock('../keychain.js', async (importOriginal) => {
-  const original = await importOriginal();
-  return {
-    ...original,
-    keychainStoreValue: vi.fn((account, value) => {
-      mockKeychainStore[account] = value;
-      return true;
-    }),
-    keychainRetrieveValue: vi.fn((account) => {
-      return mockKeychainStore[account] || null;
-    }),
-  };
-});
-
-import { keychainStoreValue, keychainRetrieveValue } from '../keychain.js';
-
-function setupKeychainMock() {
-  mockKeychainStore = {};
-  keychainStoreValue.mockImplementation((account, value) => {
-    mockKeychainStore[account] = value;
-    return true;
-  });
-  keychainRetrieveValue.mockImplementation((account) => {
-    return mockKeychainStore[account] || null;
-  });
+function getAuthFilePath() {
+  return path.join(tempDir, '.nansen', 'limit-order-auth.json');
 }
 
-describe('JWT caching (keychain)', () => {
-  beforeEach(() => {
-    setupKeychainMock();
-  });
+function writeAuthFile(data) {
+  const filePath = getAuthFilePath();
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data));
+}
 
-  it('loadCachedToken returns null when no entry exists', () => {
+describe('JWT caching (local file)', () => {
+  it('loadCachedToken returns null when no file exists', () => {
     expect(loadCachedToken('somePubkey')).toBeNull();
   });
 
@@ -126,8 +101,7 @@ describe('JWT caching (keychain)', () => {
   });
 
   it('loadCachedToken returns null when token is expired', () => {
-    // Manually inject expired data
-    mockKeychainStore['limit-order-jwt:pubkey'] = JSON.stringify({
+    writeAuthFile({
       walletPubkey: 'pubkey',
       token: 'expired-token',
       expiresAt: Date.now() - 1000,
@@ -136,7 +110,7 @@ describe('JWT caching (keychain)', () => {
   });
 
   it('loadCachedToken returns null when within 5-min buffer of expiry', () => {
-    mockKeychainStore['limit-order-jwt:pubkey'] = JSON.stringify({
+    writeAuthFile({
       walletPubkey: 'pubkey',
       token: 'almost-expired-token',
       expiresAt: Date.now() + 60_000, // 1 minute left, within 5-min buffer
@@ -156,8 +130,11 @@ describe('JWT caching (keychain)', () => {
     expect(loadCachedToken('pubkey')).toBe('token-2');
   });
 
-  it('loadCachedToken returns null gracefully when keychain unavailable', () => {
-    keychainRetrieveValue.mockImplementation(() => null);
+  it('loadCachedToken returns null gracefully when file is corrupted', () => {
+    const filePath = getAuthFilePath();
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, 'not json');
     expect(loadCachedToken('pubkey')).toBeNull();
   });
 });
@@ -228,9 +205,9 @@ describe('API client', () => {
   });
 
   it('getVault sends correct query params', async () => {
-    mockFetchResponse({ vaultAddress: 'vault123', userPubkey: 'pub1' });
+    mockFetchResponse({ vault: { vaultAddress: 'vault123', userPubkey: 'pub1' } });
     const result = await getVault('jwt-token', 'pub1');
-    expect(result.vaultAddress).toBe('vault123');
+    expect(result.vault.vaultAddress).toBe('vault123');
 
     const [url, opts] = global.fetch.mock.calls[0];
     expect(url).toContain('userPubkey=pub1');
@@ -386,10 +363,6 @@ describe('signSolanaMessage', () => {
 // ============= Authentication Flow =============
 
 describe('authenticate', () => {
-  beforeEach(() => {
-    setupKeychainMock();
-  });
-
   it('returns cached token when valid', async () => {
     saveCachedToken('pub1', 'cached-jwt');
     const token = await authenticate('pub1', 'local', {});
@@ -479,10 +452,6 @@ describe('resolveSolanaWallet', () => {
 // ============= Command Handlers =============
 
 describe('buildLimitOrderCommands', () => {
-  beforeEach(() => {
-    setupKeychainMock();
-  });
-
   // ---- create ----
   describe('create', () => {
     it('shows help when required params missing', async () => {
@@ -543,7 +512,7 @@ describe('buildLimitOrderCommands', () => {
       mockFetchSequence([
         { body: { challenge: 'sign this' } },
         { body: { token: 'jwt-123' } },
-        { body: { vaultAddress: 'vault123', userPubkey: 'pub1' } },
+        { body: { vault: { vaultAddress: 'vault123', userPubkey: 'pub1' } } },
         { body: { transaction: buildFakeBase64Tx(), requestId: 'dep-req-1' } },
         { body: { id: 'order-abc', txSignature: 'sig-xyz' }, status: 201 },
       ]);
@@ -575,12 +544,12 @@ describe('buildLimitOrderCommands', () => {
       const logs = [];
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit: vi.fn() });
 
-      // vault returns no vaultAddress → triggers register
+      // vault returns null → triggers register
       mockFetchSequence([
         { body: { challenge: 'sign this' } },
         { body: { token: 'jwt-123' } },
-        { body: {} }, // getVault returns empty (no vaultAddress)
-        { body: { vaultAddress: 'newVault', userPubkey: 'pub1' }, status: 201 }, // registerVault
+        { body: { vault: null } }, // getVault returns no vault
+        { body: { vault: { vaultAddress: 'newVault', userPubkey: 'pub1' } }, status: 201 }, // registerVault
         { body: { transaction: buildFakeBase64Tx(), requestId: 'dep-1' } },
         { body: { id: 'order-1', txSignature: 'sig-1' }, status: 201 },
       ]);

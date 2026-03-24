@@ -6,11 +6,13 @@
  * Zero external dependencies — uses Node.js built-in crypto only.
  */
 
+import fs from 'fs';
+import path from 'path';
 import { base58Encode, exportWallet, getWalletConfig, showWallet } from './wallet.js';
 import { signEd25519, base58Decode } from './transfer.js';
 import { signSolanaTransaction, resolveTokenAddress, validateBaseUnitAmount } from './trading.js';
 import { getWalletConnectAddress, sendSolanaTransactionViaWalletConnect, signSolanaMessageViaWalletConnect } from './walletconnect-trading.js';
-import { retrievePassword, keychainStoreValue, keychainRetrieveValue } from './keychain.js';
+import { retrievePassword } from './keychain.js';
 
 // ============= Constants =============
 
@@ -18,39 +20,46 @@ const TRADING_API_URL = process.env.NANSEN_TRADING_API_URL || 'https://trading-a
 const LO_PREFIX = '/limit-order/v2';
 const SOLSCAN_TX_URL = 'https://solscan.io/tx/';
 
-// ============= JWT Auth & Caching (OS Keychain) =============
+// ============= JWT Auth & Caching (Local File) =============
 
-/**
- * Build a keychain account name scoped to a wallet pubkey.
- * This ensures switching wallets doesn't return a stale JWT.
- */
-function keychainAccount(walletPubkey) {
-  return `limit-order-jwt:${walletPubkey}`;
+function getAuthFilePath() {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  return path.join(home, '.nansen', 'limit-order-auth.json');
 }
 
 /**
- * Store a JWT token in the OS keychain.
- * The token is stored as a JSON blob containing the JWT + expiry.
- * Falls back silently if keychain is unavailable.
+ * Save a JWT token to ~/.nansen/limit-order-auth.json.
+ * Keyed by wallet pubkey so switching wallets invalidates correctly.
  */
 export function saveCachedToken(walletPubkey, token) {
-  const data = JSON.stringify({
-    walletPubkey,
-    token,
-    // 23-hour TTL provides 1-hour safety margin against server's 24-hour JWT
-    expiresAt: Date.now() + 23 * 3600 * 1000,
-  });
-  return keychainStoreValue(keychainAccount(walletPubkey), data);
+  try {
+    const filePath = getAuthFilePath();
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { mode: 0o700, recursive: true });
+    }
+    const data = JSON.stringify({
+      walletPubkey,
+      token,
+      // 23-hour TTL provides 1-hour safety margin against server's 24-hour JWT
+      expiresAt: Date.now() + 23 * 3600 * 1000,
+    });
+    fs.writeFileSync(filePath, data, { mode: 0o600 });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Load a cached JWT token from the OS keychain.
+ * Load a cached JWT token from ~/.nansen/limit-order-auth.json.
  * Returns the token string if valid and not expired, null otherwise.
  */
 export function loadCachedToken(walletPubkey) {
   try {
-    const raw = keychainRetrieveValue(keychainAccount(walletPubkey));
-    if (!raw) return null;
+    const filePath = getAuthFilePath();
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(raw);
     if (data.walletPubkey !== walletPubkey) return null;
     // 5-minute buffer before expiry to avoid mid-request failures
@@ -515,8 +524,9 @@ EXAMPLES:
         const token = await authenticate(pubkey, walletType, walletInfo, log);
 
         // 3. Check vault, auto-register if needed
+        // Backend returns { vault: null } when no vault exists, { vault: { ... } } otherwise
         const vaultInfo = await getVault(token, pubkey);
-        if (!vaultInfo || !vaultInfo.vaultAddress) {
+        if (!vaultInfo?.vault) {
           log('  Registering vault for first-time use...');
           await registerVault(token);
         }
