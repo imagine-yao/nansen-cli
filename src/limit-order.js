@@ -659,6 +659,7 @@ EXAMPLES:
       } catch (err) {
         log(`Error: ${err.message}`);
         if (err.details) log(`  Details: ${JSON.stringify(err.details)}`);
+        if (err.cause) log(`  Cause: ${err.cause.message || err.cause}`);
         exit(1);
       }
     },
