@@ -470,7 +470,7 @@ describe('buildLimitOrderCommands', () => {
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-price': '-5',
+        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '-5',
       });
       expect(exit).toHaveBeenCalledWith(1);
       expect(logs.some(l => l.includes('positive number'))).toBe(true);
@@ -482,7 +482,7 @@ describe('buildLimitOrderCommands', () => {
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1000000000',
+        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL',
         'trigger-price': '80', 'trigger-condition': 'invalid',
       });
       expect(exit).toHaveBeenCalledWith(1);
@@ -496,7 +496,7 @@ describe('buildLimitOrderCommands', () => {
 
       await cmds.create([], null, {}, {
         from: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-        to: 'USDC', amount: '1000000000', 'trigger-price': '80',
+        to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
       });
       expect(exit).toHaveBeenCalledWith(1);
       expect(logs.some(l => l.includes('Invalid --from token address'))).toBe(true);
@@ -510,7 +510,7 @@ describe('buildLimitOrderCommands', () => {
       await cmds.create([], null, {}, {
         from: 'SOL',
         to: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-        amount: '1000000000', 'trigger-price': '80',
+        amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
       });
       expect(exit).toHaveBeenCalledWith(1);
       expect(logs.some(l => l.includes('Invalid --to token address'))).toBe(true);
@@ -534,7 +534,7 @@ describe('buildLimitOrderCommands', () => {
       await cmds.create([], null, {}, {
         from: 'So11111111111111111111111111111111111111112',
         to: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        amount: '1000000000', 'trigger-price': '80',
+        amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
         wallet: 'lo-addr-test',
       });
       expect(exit).not.toHaveBeenCalled();
@@ -547,7 +547,7 @@ describe('buildLimitOrderCommands', () => {
       const cmds = buildLimitOrderCommands({ log: (m) => logs.push(m), exit });
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1.5', 'trigger-price': '80',
+        from: 'SOL', to: 'USDC', amount: '1.5', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
       });
       expect(exit).toHaveBeenCalledWith(1);
     });
@@ -573,6 +573,8 @@ describe('buildLimitOrderCommands', () => {
         from: 'SOL',
         to: 'USDC',
         amount: '1000000000',
+        'trigger-mint': 'SOL',
+        'trigger-condition': 'below',
         'trigger-price': '80',
         wallet: 'lo-create-test',
       });
@@ -607,7 +609,7 @@ describe('buildLimitOrderCommands', () => {
       ]);
 
       await cmds.create([], null, {}, {
-        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-price': '80',
+        from: 'SOL', to: 'USDC', amount: '1000000000', 'trigger-mint': 'SOL', 'trigger-condition': 'below', 'trigger-price': '80',
         wallet: 'lo-vault-test',
       });
 

@@ -935,12 +935,13 @@
                 },
                 "trigger-condition": {
                   "type": "string",
-                  "default": "below",
+                  "required": true,
                   "description": "Trigger when price is 'above' or 'below' target"
                 },
                 "trigger-mint": {
                   "type": "string",
-                  "description": "Token whose price triggers the order (defaults to output mint)"
+                  "required": true,
+                  "description": "Token whose price triggers the order (e.g. SOL)"
                 },
                 "slippage": {
                   "type": "number",

@@ -1502,7 +1502,7 @@ EXAMPLES:
   nansen trade quote --chain base --to-chain solana --from USDC --to USDC --amount 1000000
   nansen trade execute --quote 1708900000000-abc123
   nansen trade bridge-status --tx-hash 0xabc... --from-chain base --to-chain solana
-  nansen trade limit-order create --from SOL --to USDC --amount 1000000000 --trigger-price 80
+  nansen trade limit-order create --from SOL --to USDC --amount 1000000000 --trigger-mint SOL --trigger-condition below --trigger-price 80
   nansen trade limit-order list
 
 WALLET:
@@ -1536,7 +1536,7 @@ SUBCOMMANDS:
   update    Update trigger price or slippage
 
 USAGE:
-  nansen trade limit-order create --from <token> --to <token> --amount <units> --trigger-price <usd>
+  nansen trade limit-order create --from <token> --to <token> --amount <units> --trigger-mint <token> --trigger-condition <above|below> --trigger-price <usd>
   nansen trade limit-order list [--state <open|filled|cancelled|expired>]
   nansen trade limit-order cancel --order <orderId>
   nansen trade limit-order update --order <orderId> --trigger-price <usd>`);

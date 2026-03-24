@@ -443,30 +443,32 @@ export function buildLimitOrderCommands(deps = {}) {
       const to = resolveTokenAddress(toRaw, 'solana');
       const amount = options.amount || args[2];
       const triggerPrice = options['trigger-price'];
-      const triggerCondition = options['trigger-condition'] || 'below';
+      const triggerCondition = options['trigger-condition'];
       const triggerMintRaw = options['trigger-mint'];
       const slippageBps = options.slippage != null ? Number(options.slippage) : undefined;
       const expiresStr = options.expires || '30d';
       const walletName = options.wallet;
 
-      if (!from || !to || !amount || triggerPrice == null) {
+      if (!from || !to || !amount || triggerPrice == null || !triggerMintRaw || !triggerCondition) {
         log(`
-Usage: nansen trade limit-order create --from <token> --to <token> --amount <baseUnits> --trigger-price <usd>
+Usage: nansen trade limit-order create --from <token> --to <token> --amount <baseUnits> --trigger-mint <token> --trigger-condition <above|below> --trigger-price <usd>
 
 OPTIONS:
   --from <symbol|address>        Token to sell (symbol like SOL, USDC or address)
   --to <symbol|address>          Token to buy (symbol like USDC, SOL or address)
   --amount <units>               Amount in BASE UNITS (e.g. lamports)
+  --trigger-mint <symbol|addr>   Token whose price triggers the order (e.g. SOL)
+  --trigger-condition <cond>     "above" or "below"
   --trigger-price <usd>          Trigger price in USD (must be a positive number)
-  --trigger-condition <cond>     "above" or "below" (default: below)
-  --trigger-mint <address>       Token whose price triggers (defaults to output mint)
   --slippage <bps>               Slippage tolerance in basis points (e.g. 50 = 0.5%)
   --expires <duration>           Expiry duration: "24h", "7d", "30d" (default: 30d)
   --wallet <name>                Wallet name (or "walletconnect"/"wc")
 
 EXAMPLES:
-  nansen trade limit-order create --from SOL --to USDC --amount 1000000000 --trigger-price 80 --trigger-condition below
-  nansen trade limit-order create --from USDC --to SOL --amount 80000000 --trigger-price 75 --trigger-condition below`);
+  # Sell 1 SOL for USDC when SOL drops below $80
+  nansen trade limit-order create --from SOL --to USDC --amount 1000000000 --trigger-mint SOL --trigger-condition below --trigger-price 80
+  # Buy SOL with 80 USDC when SOL goes above $100
+  nansen trade limit-order create --from USDC --to SOL --amount 80000000 --trigger-mint SOL --trigger-condition above --trigger-price 100`);
         exit(1);
         return;
       }
@@ -514,15 +516,13 @@ EXAMPLES:
         return;
       }
 
-      const triggerMint = triggerMintRaw ? resolveTokenAddress(triggerMintRaw, 'solana') : to;
+      const triggerMint = resolveTokenAddress(triggerMintRaw, 'solana');
 
-      if (triggerMintRaw) {
-        const tmValidation = validateTokenAddress(triggerMint, 'solana');
-        if (!tmValidation.valid) {
-          log(`Error: Invalid --trigger-mint address: ${tmValidation.error}`);
-          exit(1);
-          return;
-        }
+      const tmValidation = validateTokenAddress(triggerMint, 'solana');
+      if (!tmValidation.valid) {
+        log(`Error: Invalid --trigger-mint address: ${tmValidation.error}`);
+        exit(1);
+        return;
       }
 
       try {
