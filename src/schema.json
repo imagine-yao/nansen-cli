@@ -468,6 +468,10 @@
                 },
                 "chain": {
                   "default": "solana"
+                },
+                "include-stablecoins": {
+                  "description": "Whether to include stablecoins in screener results (default true on API side)",
+                  "default": true
                 }
               }
             }

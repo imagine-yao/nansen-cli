@@ -1096,12 +1096,25 @@ describe('NansenAPI', () => {
       it('should pass different timeframes correctly', async () => {
         for (const timeframe of ['5m', '1h', '6h', '24h', '7d', '30d']) {
           setupMock(MOCK_RESPONSES.tokenScreener);
-          
+
           await api.tokenScreener({ chains: ['solana'], timeframe });
-          
+
           const body = expectFetchCalledWith('/api/v1/token-screener');
           expect(body.timeframe).toBe(timeframe);
         }
+      });
+
+      it('should pass include_stablecoins filter when set to false', async () => {
+        setupMock(MOCK_RESPONSES.tokenScreener);
+
+        await api.tokenScreener({
+          chains: ['solana'],
+          timeframe: '24h',
+          filters: { include_stablecoins: false }
+        });
+
+        const body = expectFetchCalledWith('/api/v1/token-screener');
+        expect(body.filters.include_stablecoins).toBe(false);
       });
     });
 
