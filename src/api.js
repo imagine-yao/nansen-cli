@@ -294,6 +294,19 @@ export function validateAddress(address, chain = 'ethereum') {
 }
 
 /**
+ * Normalize EVM address to lowercase for API compatibility.
+ * The API should handle case-insensitive addresses server-side, but this is
+ * a defensive client-side measure since checksummed addresses currently
+ * return empty results.
+ */
+export function normalizeAddress(address, chain = 'ethereum') {
+  if (address && typeof address === 'string' && address.startsWith('0x') && EVM_CHAINS.includes(chain)) {
+    return address.toLowerCase();
+  }
+  return address;
+}
+
+/**
  * Validate token address (same rules as wallet address)
  */
 export function validateTokenAddress(tokenAddress, chain = 'solana') {
