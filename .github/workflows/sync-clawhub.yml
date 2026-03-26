@@ -1,7 +1,8 @@
 name: Sync Skills to ClawHub
 
 on:
-  workflow_dispatch: # manual trigger only — automatic sync runs via ci.yml publish job
+  workflow_call: # called from ci.yml publish job after successful npm publish
+  workflow_dispatch: # manual trigger if ever needed
 
 jobs:
   sync-clawhub:
