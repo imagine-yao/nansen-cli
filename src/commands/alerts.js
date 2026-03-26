@@ -485,6 +485,7 @@ REQUIRED:
   --name <name>                Alert name
   --type <type>                sm-token-flows | common-token-transfer | smart-contract-call
   At least one channel:        --telegram <chatId> | --slack <url> | --discord <url> | --webhook <url>
+  --webhook-secret <secret>    Signing secret for webhook payload verification (optional, webhook only)
 
 OPTIONS (all types):
   --chains <chains>            Comma-separated chains (e.g. ethereum,solana)
@@ -565,7 +566,11 @@ USAGE:
         if (options.telegram) channels.push({ type: 'telegram', data: { chatId: String(options.telegram) } });
         if (options.slack) channels.push({ type: 'slack', data: { webhookUrl: options.slack } });
         if (options.discord) channels.push({ type: 'discord', data: { webhookUrl: options.discord } });
-        if (options.webhook) channels.push({ type: 'webhook', data: { webhookUrl: options.webhook } });
+        if (options.webhook) {
+          const webhookData = { webhookUrl: options.webhook };
+          if (options.webhookSecret) webhookData.secret = options.webhookSecret;
+          channels.push({ type: 'webhook', data: webhookData });
+        }
         return channels.length > 0 ? channels : null;
       }
 

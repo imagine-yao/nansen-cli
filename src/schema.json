@@ -617,6 +617,10 @@
               "type": "string",
               "description": "HTTP/HTTPS endpoint URL to POST alert payloads to"
             },
+            "webhook-secret": {
+              "type": "string",
+              "description": "Signing secret for webhook payload verification (optional, webhook only)"
+            },
             "data": {
               "type": "string",
               "description": "Alert config JSON. --chains is merged on top."
@@ -661,6 +665,10 @@
             "webhook": {
               "type": "string",
               "description": "HTTP/HTTPS endpoint URL to POST alert payloads to"
+            },
+            "webhook-secret": {
+              "type": "string",
+              "description": "Signing secret for webhook payload verification (optional, webhook only)"
             },
             "data": {
               "type": "string",

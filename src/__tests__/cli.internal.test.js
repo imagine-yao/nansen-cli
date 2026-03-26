@@ -880,6 +880,50 @@ describe('alerts create — webhook channel', () => {
     expect(err.message).toContain('--webhook');
   });
 
+  it('should include secret in webhook channel when --webhook-secret provided', async () => {
+    const mockApi = { alertsCreate: vi.fn().mockResolvedValue({ id: 'new' }) };
+    const cmd = buildAlertsCommands({ log: vi.fn() })['alerts'];
+    await cmd(
+      ['create'],
+      mockApi,
+      {},
+      { name: 'Webhook Secret', type: 'sm-token-flows', chains: 'ethereum', webhook: 'https://example.com/hook', webhookSecret: 'my-secret-key', 'inflow-1h-min': 1000000 },
+    );
+    expect(mockApi.alertsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channels: [{ type: 'webhook', data: { webhookUrl: 'https://example.com/hook', secret: 'my-secret-key' } }],
+      }),
+    );
+  });
+
+  it('should not include secret when --webhook-secret is omitted', async () => {
+    const mockApi = { alertsCreate: vi.fn().mockResolvedValue({ id: 'new' }) };
+    const cmd = buildAlertsCommands({ log: vi.fn() })['alerts'];
+    await cmd(
+      ['create'],
+      mockApi,
+      {},
+      { name: 'No Secret', type: 'sm-token-flows', chains: 'ethereum', webhook: 'https://example.com/hook', 'inflow-1h-min': 1000000 },
+    );
+    const channel = mockApi.alertsCreate.mock.calls[0][0].channels[0];
+    expect(channel.data).toEqual({ webhookUrl: 'https://example.com/hook' });
+    expect(channel.data).not.toHaveProperty('secret');
+  });
+
+  it('should include secret in webhook channel on update', async () => {
+    const mockApi = {
+      alertsGet: vi.fn().mockResolvedValue({ type: 'sm-token-flows', data: { chains: ['ethereum'], inflow_1h: { min: 1000000 } } }),
+      alertsUpdate: vi.fn().mockResolvedValue({ id: 'abc123' }),
+    };
+    const cmd = buildAlertsCommands({ log: vi.fn() })['alerts'];
+    await cmd(['update', 'abc123'], mockApi, {}, { webhook: 'https://example.com/hook', webhookSecret: 'update-secret' });
+    expect(mockApi.alertsUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channels: [{ type: 'webhook', data: { webhookUrl: 'https://example.com/hook', secret: 'update-secret' } }],
+      }),
+    );
+  });
+
   it('should rewrite API error for webhook channel index 0', async () => {
     const { NansenError, ErrorCode } = await import('../api.js');
     const mockApi = {
