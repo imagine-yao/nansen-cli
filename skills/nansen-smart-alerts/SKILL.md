@@ -42,6 +42,7 @@ nansen alerts delete <id>
 | `--slack` | webhook URL | optional | | |
 | `--discord` | webhook URL | optional | | |
 | `--webhook` | endpoint URL | optional | optional | |
+| `--webhook-secret` | optional (webhook only) | optional | | |
 | `--description` | optional | optional | | |
 | `--enabled` | | flag | flag | |
 | `--disabled` | flag | flag | flag | |

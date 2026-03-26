@@ -485,10 +485,10 @@ REQUIRED:
   --name <name>                Alert name
   --type <type>                sm-token-flows | common-token-transfer | smart-contract-call
   At least one channel:        --telegram <chatId> | --slack <url> | --discord <url> | --webhook <url>
-  --webhook-secret <secret>    Signing secret for webhook payload verification (optional, webhook only)
 
 OPTIONS (all types):
   --chains <chains>            Comma-separated chains (e.g. ethereum,solana)
+  --webhook-secret <secret>    Signing secret for webhook payload verification (webhook only)
   --token <address:chain>      Include token (repeatable)
   --exclude-token <addr:chain> Exclude token (repeatable)
   --description '<text>'       Alert description
