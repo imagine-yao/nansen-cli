@@ -887,11 +887,11 @@ describe('alerts create — webhook channel', () => {
       ['create'],
       mockApi,
       {},
-      { name: 'Webhook Secret', type: 'sm-token-flows', chains: 'ethereum', webhook: 'https://example.com/hook', "webhook-secret": 'my-secret-key', 'inflow-1h-min': 1000000 },
+      { name: 'Webhook Secret', type: 'sm-token-flows', chains: 'ethereum', webhook: 'https://example.com/hook', "webhook-secret": 'my-secret-key-1234', 'inflow-1h-min': 1000000 },
     );
     expect(mockApi.alertsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        channels: [{ type: 'webhook', data: { webhookUrl: 'https://example.com/hook', secret: 'my-secret-key' } }],
+        channels: [{ type: 'webhook', data: { webhookUrl: 'https://example.com/hook', secret: 'my-secret-key-1234' } }],
       }),
     );
   });
@@ -916,12 +916,24 @@ describe('alerts create — webhook channel', () => {
       alertsUpdate: vi.fn().mockResolvedValue({ id: 'abc123' }),
     };
     const cmd = buildAlertsCommands({ log: vi.fn() })['alerts'];
-    await cmd(['update', 'abc123'], mockApi, {}, { webhook: 'https://example.com/hook', "webhook-secret": 'update-secret' });
+    await cmd(['update', 'abc123'], mockApi, {}, { webhook: 'https://example.com/hook', "webhook-secret": 'update-secret-1234' });
     expect(mockApi.alertsUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        channels: [{ type: 'webhook', data: { webhookUrl: 'https://example.com/hook', secret: 'update-secret' } }],
+        channels: [{ type: 'webhook', data: { webhookUrl: 'https://example.com/hook', secret: 'update-secret-1234' } }],
       }),
     );
+  });
+
+  it('should reject --webhook-secret shorter than 16 characters', async () => {
+    const mockApi = { alertsCreate: vi.fn().mockResolvedValue({ id: 'new' }) };
+    const cmd = buildAlertsCommands({ log: vi.fn() })['alerts'];
+    await expect(cmd(
+      ['create'],
+      mockApi,
+      {},
+      { name: 'Short Secret', type: 'sm-token-flows', chains: 'ethereum', webhook: 'https://example.com/hook', "webhook-secret": 'short', 'inflow-1h-min': 1000000 },
+    )).rejects.toThrow('--webhook-secret must be at least 16 characters');
+    expect(mockApi.alertsCreate).not.toHaveBeenCalled();
   });
 
   it('should rewrite API error for webhook channel index 0', async () => {

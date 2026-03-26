@@ -568,7 +568,10 @@ USAGE:
         if (options.discord) channels.push({ type: 'discord', data: { webhookUrl: options.discord } });
         if (options.webhook) {
           const webhookData = { webhookUrl: options.webhook };
-          if (options["webhook-secret"]) webhookData.secret = options["webhook-secret"];
+          if (options["webhook-secret"]) {
+            if (options["webhook-secret"].length < 16) throw new NansenError('--webhook-secret must be at least 16 characters', ErrorCode.INVALID_PARAMS);
+            webhookData.secret = options["webhook-secret"];
+          }
           channels.push({ type: 'webhook', data: webhookData });
         }
         return channels.length > 0 ? channels : null;
