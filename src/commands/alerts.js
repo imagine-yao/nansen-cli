@@ -484,10 +484,11 @@ USAGE:
 REQUIRED:
   --name <name>                Alert name
   --type <type>                sm-token-flows | common-token-transfer | smart-contract-call
-  At least one channel:        --telegram <chatId> | --slack <url> | --discord <url>
+  At least one channel:        --telegram <chatId> | --slack <url> | --discord <url> | --webhook <url>
 
 OPTIONS (all types):
   --chains <chains>            Comma-separated chains (e.g. ethereum,solana)
+  --webhook-secret <secret>    Signing secret for webhook payload verification (webhook only)
   --token <address:chain>      Include token (repeatable)
   --exclude-token <addr:chain> Exclude token (repeatable)
   --description '<text>'       Alert description
@@ -565,6 +566,14 @@ USAGE:
         if (options.telegram) channels.push({ type: 'telegram', data: { chatId: String(options.telegram) } });
         if (options.slack) channels.push({ type: 'slack', data: { webhookUrl: options.slack } });
         if (options.discord) channels.push({ type: 'discord', data: { webhookUrl: options.discord } });
+        if (options.webhook) {
+          const webhookData = { webhookUrl: options.webhook };
+          if (options["webhook-secret"]) {
+            if (options["webhook-secret"].length < 16) throw new NansenError('--webhook-secret must be at least 16 characters', ErrorCode.INVALID_PARAMS);
+            webhookData.secret = options["webhook-secret"];
+          }
+          channels.push({ type: 'webhook', data: webhookData });
+        }
         return channels.length > 0 ? channels : null;
       }
 
@@ -608,7 +617,7 @@ USAGE:
           if (!name) missing.push('--name');
           if (!type) missing.push('--type');
           if (!options.chains) missing.push('--chains');
-          if (!channels) missing.push('a channel (--telegram, --slack, or --discord)');
+          if (!channels) missing.push('a channel (--telegram, --slack, --discord, or --webhook)');
           if (missing.length > 0) {
             throw new NansenError(`Required: ${missing.join(', ')}`, ErrorCode.MISSING_PARAM);
           }
@@ -707,7 +716,9 @@ USAGE:
               ? `Invalid Slack webhook URL. Check the URL and try again.`
               : ch?.type === 'discord'
                 ? `Invalid Discord webhook URL. Check the URL and try again.`
-                : err.message;
+                : ch?.type === 'webhook'
+                  ? `Invalid webhook URL (${ch.data.webhookUrl}). Ensure the endpoint is reachable and returns 2xx.`
+                  : err.message;
           throw new NansenError(hint, err.code ?? ErrorCode.INVALID_PARAMS, err.status);
         }
         throw err;
