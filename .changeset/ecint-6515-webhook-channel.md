@@ -1,5 +1,5 @@
 ---
-"nansen-cli": patch
+"nansen-cli": minor
 ---
 
 Add `--webhook <url>` and `--webhook-secret <secret>` flags to `alerts create` and `alerts update`.
