@@ -568,7 +568,7 @@ USAGE:
         if (options.discord) channels.push({ type: 'discord', data: { webhookUrl: options.discord } });
         if (options.webhook) {
           const webhookData = { webhookUrl: options.webhook };
-          if (options.webhookSecret) webhookData.secret = options.webhookSecret;
+          if (options["webhook-secret"]) webhookData.secret = options["webhook-secret"];
           channels.push({ type: 'webhook', data: webhookData });
         }
         return channels.length > 0 ? channels : null;
