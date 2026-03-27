@@ -27,6 +27,8 @@ Get your API key at [app.nansen.ai/auth/agent-setup](https://app.nansen.ai/auth/
 
 ```
 nansen research <category> <subcommand> [options]
+nansen agent "<question>"             # AI research agent (200 credits, Pro)
+nansen agent "<question>" --expert    # deeper analysis (750 credits, Pro)
 nansen trade <subcommand> [options]
 nansen wallet <subcommand> [options]
 nansen schema [command] [--pretty]    # full command reference (no API key needed)
