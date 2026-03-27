@@ -596,7 +596,10 @@ describe('buildTradingCommands', () => {
     });
 
     await cmds.quote([], null, {}, {
-      chain: 'solana', from: 'So111', to: 'EPjFW', amount: '1000',
+      chain: 'solana',
+      from: 'So11111111111111111111111111111111111111112',
+      to: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      amount: '1000000000',
     });
 
     expect(exitCalled).toBe(true);
@@ -1339,7 +1342,7 @@ describe('quote handler rejects decimal amounts before API call', () => {
     });
 
     await cmds.quote([], null, {}, {
-      chain: 'solana', from: 'So111', to: 'EPjFW', amount: '0.005',
+      chain: 'solana', from: 'So11111111111111111111111111111111111111112', to: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: '0.005',
     });
 
     expect(exitCalled).toBe(true);
