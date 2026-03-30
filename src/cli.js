@@ -1237,7 +1237,7 @@ export function buildCommands(deps = {}) {
           }
           return result;
         },
-        'holders': () => apiInstance.tokenHolders({ tokenAddress, chain, labelType: onlySmartMoney ? 'smart_money' : 'all_holders', filters, orderBy, pagination }),
+        'holders': () => apiInstance.tokenHolders({ tokenAddress, chain, labelType: onlySmartMoney ? 'smart_money' : 'all_holders', filters, orderBy, pagination, withLabels: options['premium-labels'] !== undefined ? Boolean(options['premium-labels']) : undefined }),
         'flows': () => {
           const date = parseDateOption(options.date, days);
           const label = options.label;

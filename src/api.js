@@ -971,19 +971,21 @@ export class NansenAPI {
   }
 
   async tokenHolders(params = {}) {
-    const { tokenAddress, chain = 'solana', labelType = 'all_holders', filters = {}, orderBy, pagination } = params;
+    const { tokenAddress, chain = 'solana', labelType = 'all_holders', filters = {}, orderBy, pagination, withLabels } = params;
     if (tokenAddress) {
       const validation = validateTokenAddress(tokenAddress, chain);
       if (!validation.valid) throw new NansenError(validation.error, validation.code);
     }
-    return this.request('/api/v1/tgm/holders', {
+    const body = {
       token_address: tokenAddress,
       chain,
       label_type: labelType,
       filters,
       order_by: orderBy,
       pagination
-    });
+    };
+    if (withLabels !== undefined) body.with_labels = withLabels;
+    return this.request('/api/v1/tgm/holders', body);
   }
 
   async tokenFlows(params = {}) {

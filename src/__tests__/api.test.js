@@ -1180,6 +1180,13 @@ describe('NansenAPI', () => {
         const body = expectFetchCalledWith('/api/v1/tgm/holders');
         expect(body.order_by).toEqual([{ field: 'value_usd', direction: 'DESC' }]);
       });
+
+      it('should pass with_labels when withLabels is set', async () => {
+        setupMock(MOCK_RESPONSES.tokenHolders);
+        await api.tokenHolders({ tokenAddress: TEST_DATA.solana.token, chain: 'solana', withLabels: true });
+        const body = expectFetchCalledWith('/api/v1/tgm/holders');
+        expect(body.with_labels).toBe(true);
+      });
     });
 
     describe('tokenFlows', () => {
