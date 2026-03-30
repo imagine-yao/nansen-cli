@@ -283,7 +283,13 @@
                 },
                 "label": {
                   "description": "Holder segment to filter flows by",
-                  "enum": ["top_100_holders", "smart_money", "public_figure", "whale", "exchange"],
+                  "enum": [
+                    "top_100_holders",
+                    "smart_money",
+                    "public_figure",
+                    "whale",
+                    "exchange"
+                  ],
                   "default": "top_100_holders"
                 }
               }
@@ -303,7 +309,10 @@
                 },
                 "buy-or-sell": {
                   "description": "Filter by buy or sell side",
-                  "enum": ["BUY", "SELL"],
+                  "enum": [
+                    "BUY",
+                    "SELL"
+                  ],
                   "default": "BUY"
                 }
               }
@@ -349,7 +358,8 @@
                   "required": true
                 },
                 "premium-labels": {
-                  "description": "Include premium Nansen labels (requires premium access)"
+                  "description": "Include premium Nansen labels in the response (true=premium, false=free-tier). When omitted, uses API default.",
+                  "type": "boolean"
                 }
               }
             },
@@ -367,7 +377,8 @@
                   "default": 30
                 },
                 "premium-labels": {
-                  "description": "Include premium Nansen labels (requires premium access)"
+                  "description": "Include premium Nansen labels in the response (true=premium, false=free-tier). When omitted, uses API default.",
+                  "type": "boolean"
                 }
               }
             },
@@ -382,7 +393,8 @@
                   "default": 30
                 },
                 "premium-labels": {
-                  "description": "Include premium Nansen labels (requires premium access)"
+                  "description": "Include premium Nansen labels in the response (true=premium, false=free-tier). When omitted, uses API default.",
+                  "type": "boolean"
                 }
               }
             },
@@ -526,7 +538,8 @@
                   "default": 30
                 },
                 "premium-labels": {
-                  "description": "Include premium Nansen labels (requires premium access)"
+                  "description": "Include premium Nansen labels in the response (true=premium, false=free-tier). When omitted, uses API default.",
+                  "type": "boolean"
                 }
               }
             }
