@@ -1401,7 +1401,7 @@ describe('NansenAPI', () => {
 
         const body = expectFetchCalledWith('/api/v1/tgm/flow-intelligence');
         expect(body.token_address).toBe(TEST_DATA.solana.token);
-        expect(body.date).toBeUndefined();
+        expect(body.timeframe).toBe('1d');
 
         expect(result.flows).toBeInstanceOf(Array);
         expect(result.flows[0]).toHaveProperty('label', 'Smart Money');

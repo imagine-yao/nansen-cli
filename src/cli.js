@@ -1250,7 +1250,7 @@ export function buildCommands(deps = {}) {
           const buyOrSell = (options['buy-or-sell'] || 'BUY').toUpperCase();
           return apiInstance.tokenWhoBoughtSold({ tokenAddress, chain, buyOrSell, filters, orderBy, pagination, days, date });
         },
-        'flow-intelligence': () => apiInstance.tokenFlowIntelligence({ tokenAddress, chain, days }),
+        'flow-intelligence': () => apiInstance.tokenFlowIntelligence({ tokenAddress, chain, timeframe: options.timeframe || '1d' }),
         'transfers': () => {
           // Inject --from/--to into filters
           if (options.from) filters.from_address = options.from;

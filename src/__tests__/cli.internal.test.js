@@ -2133,14 +2133,14 @@ describe('buildCommands', () => {
       );
     });
 
-    it('should pass days to flow-intelligence handler', async () => {
+    it('should pass timeframe to flow-intelligence handler', async () => {
       const mockApi = {
         tokenFlowIntelligence: vi.fn().mockResolvedValue({ data: [] })
       };
-      await commands['token'](['flow-intelligence'], mockApi, {}, { token: '0xabc', days: '7' });
+      await commands['token'](['flow-intelligence'], mockApi, {}, { token: '0xabc', timeframe: '7d' });
 
       expect(mockApi.tokenFlowIntelligence).toHaveBeenCalledWith(
-        expect.objectContaining({ days: 7 })
+        expect.objectContaining({ timeframe: '7d' })
       );
     });
   });
