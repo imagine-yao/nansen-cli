@@ -1244,7 +1244,10 @@ export function buildCommands(deps = {}) {
           return apiInstance.tokenFlows({ tokenAddress, chain, label, filters, orderBy, pagination, days, date });
         },
         'dex-trades': () => apiInstance.tokenDexTrades({ tokenAddress, chain, onlySmartMoney, filters, orderBy, pagination, days }),
-        'pnl': () => apiInstance.tokenPnlLeaderboard({ tokenAddress, chain, filters, orderBy, pagination, days }),
+        'pnl': () => {
+          const withLabels = options['premium-labels'] !== undefined ? Boolean(options['premium-labels']) : undefined;
+          return apiInstance.tokenPnlLeaderboard({ tokenAddress, chain, filters, orderBy, pagination, days, withLabels });
+        },
         'who-bought-sold': () => {
           const date = parseDateOption(options.date, days);
           const buyOrSell = (options['buy-or-sell'] || 'BUY').toUpperCase();
@@ -1260,7 +1263,10 @@ export function buildCommands(deps = {}) {
         'jup-dca': () => apiInstance.tokenJupDca({ tokenAddress, filters, orderBy, pagination }),
         'perp-trades': () => apiInstance.tokenPerpTrades({ tokenSymbol, filters, orderBy, pagination, days }),
         'perp-positions': () => apiInstance.tokenPerpPositions({ tokenSymbol, filters, orderBy, pagination }),
-        'perp-pnl-leaderboard': () => apiInstance.tokenPerpPnlLeaderboard({ tokenSymbol, filters, orderBy, pagination, days }),
+        'perp-pnl-leaderboard': () => {
+          const withLabels = options['premium-labels'] !== undefined ? Boolean(options['premium-labels']) : undefined;
+          return apiInstance.tokenPerpPnlLeaderboard({ tokenSymbol, filters, orderBy, pagination, days, withLabels });
+        },
         'help': () => ({
           commands: ['info', 'ohlcv', 'screener', 'holders', 'flows', 'dex-trades', 'pnl', 'who-bought-sold', 'flow-intelligence', 'transfers', 'jup-dca', 'perp-trades', 'perp-positions', 'perp-pnl-leaderboard'],
           description: 'Token God Mode endpoints',
@@ -1334,7 +1340,10 @@ export function buildCommands(deps = {}) {
 
       const handlers = {
         'screener': () => apiInstance.perpScreener({ filters, orderBy, pagination, days }),
-        'leaderboard': () => apiInstance.perpLeaderboard({ filters, orderBy, pagination, days }),
+        'leaderboard': () => {
+          const withLabels = options['premium-labels'] !== undefined ? Boolean(options['premium-labels']) : undefined;
+          return apiInstance.perpLeaderboard({ filters, orderBy, pagination, days, withLabels });
+        },
         'help': () => ({
           commands: ['screener', 'leaderboard'],
           description: 'Perpetual futures analytics endpoints',

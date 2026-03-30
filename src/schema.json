@@ -362,6 +362,9 @@
                 },
                 "days": {
                   "default": 30
+                },
+                "premium-labels": {
+                  "description": "Include premium Nansen labels (requires premium access)"
                 }
               }
             },
@@ -374,6 +377,9 @@
                 },
                 "days": {
                   "default": 30
+                },
+                "premium-labels": {
+                  "description": "Include premium Nansen labels (requires premium access)"
                 }
               }
             },
@@ -515,6 +521,9 @@
               "options": {
                 "days": {
                   "default": 30
+                },
+                "premium-labels": {
+                  "description": "Include premium Nansen labels (requires premium access)"
                 }
               }
             }

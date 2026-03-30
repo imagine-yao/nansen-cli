@@ -1027,19 +1027,21 @@ export class NansenAPI {
   }
 
   async tokenPnlLeaderboard(params = {}) {
-    const { tokenAddress, chain = 'solana', filters = {}, orderBy, pagination, days = 30 } = params;
+    const { tokenAddress, chain = 'solana', filters = {}, orderBy, pagination, days = 30, withLabels } = params;
     if (tokenAddress) {
       const validation = validateTokenAddress(tokenAddress, chain);
       if (!validation.valid) throw new NansenError(validation.error, validation.code);
     }
-    return this.request('/api/v1/tgm/pnl-leaderboard', {
+    const body = {
       token_address: tokenAddress,
       chain,
       date: buildDateRange(days),
       filters,
       order_by: orderBy,
       pagination
-    });
+    };
+    if (withLabels !== undefined) body.with_labels = withLabels;
+    return this.request('/api/v1/tgm/pnl-leaderboard', body);
   }
 
   async tokenWhoBoughtSold(params = {}) {
@@ -1125,14 +1127,16 @@ export class NansenAPI {
   }
 
   async tokenPerpPnlLeaderboard(params = {}) {
-    const { tokenSymbol, filters = {}, orderBy, pagination, days = 30 } = params;
-    return this.request('/api/v1/tgm/perp-pnl-leaderboard', {
+    const { tokenSymbol, filters = {}, orderBy, pagination, days = 30, withLabels } = params;
+    const body = {
       token_symbol: tokenSymbol,
       date: buildDateRange(days),
       filters,
       order_by: orderBy,
       pagination
-    });
+    };
+    if (withLabels !== undefined) body.with_labels = withLabels;
+    return this.request('/api/v1/tgm/perp-pnl-leaderboard', body);
   }
 
   async tokenIndicators(params = {}) {
@@ -1186,13 +1190,15 @@ export class NansenAPI {
   }
 
   async perpLeaderboard(params = {}) {
-    const { filters = {}, orderBy, pagination, days = 30 } = params;
-    return this.request('/api/v1/perp-leaderboard', {
+    const { filters = {}, orderBy, pagination, days = 30, withLabels } = params;
+    const body = {
       date: buildDateRange(days),
       filters,
       order_by: orderBy,
       pagination
-    });
+    };
+    if (withLabels !== undefined) body.with_labels = withLabels;
+    return this.request('/api/v1/perp-leaderboard', body);
   }
 
   // ============= Prediction Market Endpoints =============
