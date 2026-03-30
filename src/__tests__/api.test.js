@@ -1181,11 +1181,11 @@ describe('NansenAPI', () => {
         expect(body.order_by).toEqual([{ field: 'value_usd', direction: 'DESC' }]);
       });
 
-      it('should pass with_labels when withLabels is set', async () => {
+      it('should pass premium_labels when withLabels is set', async () => {
         setupMock(MOCK_RESPONSES.tokenHolders);
         await api.tokenHolders({ tokenAddress: TEST_DATA.solana.token, chain: 'solana', withLabels: true });
         const body = expectFetchCalledWith('/api/v1/tgm/holders');
-        expect(body.with_labels).toBe(true);
+        expect(body.premium_labels).toBe(true);
       });
     });
 
@@ -1350,7 +1350,7 @@ describe('NansenAPI', () => {
         expect(body.order_by).toEqual([{ field: 'total_pnl_usd', direction: 'DESC' }]);
       });
 
-      it('should pass with_labels=true when withLabels is true', async () => {
+      it('should pass premium_labels=true when withLabels is true', async () => {
         setupMock(MOCK_RESPONSES.tokenPnlLeaderboard);
 
         await api.tokenPnlLeaderboard({
@@ -1360,10 +1360,10 @@ describe('NansenAPI', () => {
         });
 
         const body = expectFetchCalledWith('/api/v1/tgm/pnl-leaderboard');
-        expect(body.with_labels).toBe(true);
+        expect(body.premium_labels).toBe(true);
       });
 
-      it('should not include with_labels when withLabels is undefined', async () => {
+      it('should not include premium_labels when withLabels is undefined', async () => {
         setupMock(MOCK_RESPONSES.tokenPnlLeaderboard);
 
         await api.tokenPnlLeaderboard({
@@ -1372,7 +1372,7 @@ describe('NansenAPI', () => {
         });
 
         const body = expectFetchCalledWith('/api/v1/tgm/pnl-leaderboard');
-        expect(body.with_labels).toBeUndefined();
+        expect(body.premium_labels).toBeUndefined();
       });
     });
 
@@ -1589,7 +1589,7 @@ describe('NansenAPI', () => {
         expect(diffDays).toBe(14);
       });
 
-      it('should pass with_labels=true when withLabels is true', async () => {
+      it('should pass premium_labels=true when withLabels is true', async () => {
         setupMock(MOCK_RESPONSES.tokenPerpPnlLeaderboard);
 
         await api.tokenPerpPnlLeaderboard({
@@ -1598,10 +1598,10 @@ describe('NansenAPI', () => {
         });
 
         const body = expectFetchCalledWith('/api/v1/tgm/perp-pnl-leaderboard');
-        expect(body.with_labels).toBe(true);
+        expect(body.premium_labels).toBe(true);
       });
 
-      it('should not include with_labels when withLabels is undefined', async () => {
+      it('should not include premium_labels when withLabels is undefined', async () => {
         setupMock(MOCK_RESPONSES.tokenPerpPnlLeaderboard);
 
         await api.tokenPerpPnlLeaderboard({
@@ -1609,7 +1609,7 @@ describe('NansenAPI', () => {
         });
 
         const body = expectFetchCalledWith('/api/v1/tgm/perp-pnl-leaderboard');
-        expect(body.with_labels).toBeUndefined();
+        expect(body.premium_labels).toBeUndefined();
       });
     });
   });
@@ -1630,22 +1630,22 @@ describe('NansenAPI', () => {
         expect(result.leaders[0]).toHaveProperty('pnl_usd', 200000);
       });
 
-      it('should pass with_labels=true when withLabels is true', async () => {
+      it('should pass premium_labels=true when withLabels is true', async () => {
         setupMock(MOCK_RESPONSES.perpLeaderboard);
 
         await api.perpLeaderboard({ withLabels: true });
 
         const body = expectFetchCalledWith('/api/v1/perp-leaderboard');
-        expect(body.with_labels).toBe(true);
+        expect(body.premium_labels).toBe(true);
       });
 
-      it('should not include with_labels when withLabels is undefined', async () => {
+      it('should not include premium_labels when withLabels is undefined', async () => {
         setupMock(MOCK_RESPONSES.perpLeaderboard);
 
         await api.perpLeaderboard({});
 
         const body = expectFetchCalledWith('/api/v1/perp-leaderboard');
-        expect(body.with_labels).toBeUndefined();
+        expect(body.premium_labels).toBeUndefined();
       });
     });
   });

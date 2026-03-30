@@ -984,7 +984,7 @@ export class NansenAPI {
       order_by: orderBy,
       pagination
     };
-    if (withLabels !== undefined) body.with_labels = withLabels;
+    if (withLabels !== undefined) body.premium_labels = withLabels;
     return this.request('/api/v1/tgm/holders', body);
   }
 
@@ -1042,7 +1042,7 @@ export class NansenAPI {
       order_by: orderBy,
       pagination
     };
-    if (withLabels !== undefined) body.with_labels = withLabels;
+    if (withLabels !== undefined) body.premium_labels = withLabels;
     return this.request('/api/v1/tgm/pnl-leaderboard', body);
   }
 
@@ -1137,7 +1137,7 @@ export class NansenAPI {
       order_by: orderBy,
       pagination
     };
-    if (withLabels !== undefined) body.with_labels = withLabels;
+    if (withLabels !== undefined) body.premium_labels = withLabels;
     return this.request('/api/v1/tgm/perp-pnl-leaderboard', body);
   }
 
@@ -1199,7 +1199,7 @@ export class NansenAPI {
       order_by: orderBy,
       pagination
     };
-    if (withLabels !== undefined) body.with_labels = withLabels;
+    if (withLabels !== undefined) body.premium_labels = withLabels;
     return this.request('/api/v1/perp-leaderboard', body);
   }
 
