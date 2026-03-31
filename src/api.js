@@ -1061,14 +1061,15 @@ export class NansenAPI {
   }
 
   async tokenFlowIntelligence(params = {}) {
-    const { tokenAddress, chain = 'solana' } = params;
+    const { tokenAddress, chain = 'solana', timeframe = '1d' } = params;
     if (tokenAddress) {
       const validation = validateTokenAddress(tokenAddress, chain);
       if (!validation.valid) throw new NansenError(validation.error, validation.code);
     }
     return this.request('/api/v1/tgm/flow-intelligence', {
       token_address: tokenAddress,
-      chain
+      chain,
+      timeframe
     });
   }
 

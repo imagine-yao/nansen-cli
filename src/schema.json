@@ -408,8 +408,8 @@
                 "token": {
                   "required": true
                 },
-                "days": {
-                  "default": 30
+                "timeframe": {
+                  "default": "1d"
                 }
               }
             },
