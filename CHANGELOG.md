@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.25.1
+
+### Patch Changes
+
+- [#367](https://github.com/nansen-ai/nansen-cli/pull/367) [`9fea10a`](https://github.com/nansen-ai/nansen-cli/commit/9fea10a844acbaccf37a348dfd4efd5c32f76a4a) Thanks [@kome12](https://github.com/kome12)! - add --premium-labels flag to tgm/holders, tgm/pnl-leaderboard, tgm/perp-pnl-leaderboard, and perp-leaderboard endpoints
+
 ## 1.25.0
 
 ### Minor Changes
