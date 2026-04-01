@@ -30,6 +30,23 @@ export const SCHEMA = { version: VERSION, ...schemaDefinition };
 
 // ============= Pagination =============
 
+/**
+ * Resolve a boolean CLI option that can be passed as either:
+ *   --flag          (flag=true, options key absent)
+ *   --flag true     (options key = 'true')
+ *   --flag false    (options key = 'false')
+ * Returns true/false/undefined (undefined = not supplied).
+ */
+export function resolveBooleanOption(options, flags, key) {
+  if (options[key] !== undefined) {
+    const val = String(options[key]).toLowerCase();
+    if (val === 'true' || val === '1') return true;
+    if (val === 'false' || val === '0') return false;
+  }
+  if (flags[key] !== undefined) return Boolean(flags[key]);
+  return undefined;
+}
+
 export function buildPagination(options) {
   if (!options.limit && !options.page) return undefined;
   return {
@@ -1237,14 +1254,17 @@ export function buildCommands(deps = {}) {
           }
           return result;
         },
-        'holders': () => apiInstance.tokenHolders({ tokenAddress, chain, labelType: onlySmartMoney ? 'smart_money' : 'all_holders', filters, orderBy, pagination }),
+        'holders': () => apiInstance.tokenHolders({ tokenAddress, chain, labelType: onlySmartMoney ? 'smart_money' : 'all_holders', filters, orderBy, pagination, withLabels: resolveBooleanOption(options, flags, 'premium-labels') }),
         'flows': () => {
           const date = parseDateOption(options.date, days);
           const label = options.label;
           return apiInstance.tokenFlows({ tokenAddress, chain, label, filters, orderBy, pagination, days, date });
         },
         'dex-trades': () => apiInstance.tokenDexTrades({ tokenAddress, chain, onlySmartMoney, filters, orderBy, pagination, days }),
-        'pnl': () => apiInstance.tokenPnlLeaderboard({ tokenAddress, chain, filters, orderBy, pagination, days }),
+        'pnl': () => {
+          const withLabels = resolveBooleanOption(options, flags, 'premium-labels');
+          return apiInstance.tokenPnlLeaderboard({ tokenAddress, chain, filters, orderBy, pagination, days, withLabels });
+        },
         'who-bought-sold': () => {
           const date = parseDateOption(options.date, days);
           const buyOrSell = (options['buy-or-sell'] || 'BUY').toUpperCase();
@@ -1260,7 +1280,10 @@ export function buildCommands(deps = {}) {
         'jup-dca': () => apiInstance.tokenJupDca({ tokenAddress, filters, orderBy, pagination }),
         'perp-trades': () => apiInstance.tokenPerpTrades({ tokenSymbol, filters, orderBy, pagination, days }),
         'perp-positions': () => apiInstance.tokenPerpPositions({ tokenSymbol, filters, orderBy, pagination }),
-        'perp-pnl-leaderboard': () => apiInstance.tokenPerpPnlLeaderboard({ tokenSymbol, filters, orderBy, pagination, days }),
+        'perp-pnl-leaderboard': () => {
+          const withLabels = resolveBooleanOption(options, flags, 'premium-labels');
+          return apiInstance.tokenPerpPnlLeaderboard({ tokenSymbol, filters, orderBy, pagination, days, withLabels });
+        },
         'help': () => ({
           commands: ['info', 'ohlcv', 'screener', 'holders', 'flows', 'dex-trades', 'pnl', 'who-bought-sold', 'flow-intelligence', 'transfers', 'jup-dca', 'perp-trades', 'perp-positions', 'perp-pnl-leaderboard'],
           description: 'Token God Mode endpoints',
@@ -1334,7 +1357,10 @@ export function buildCommands(deps = {}) {
 
       const handlers = {
         'screener': () => apiInstance.perpScreener({ filters, orderBy, pagination, days }),
-        'leaderboard': () => apiInstance.perpLeaderboard({ filters, orderBy, pagination, days }),
+        'leaderboard': () => {
+          const withLabels = resolveBooleanOption(options, flags, 'premium-labels');
+          return apiInstance.perpLeaderboard({ filters, orderBy, pagination, days, withLabels });
+        },
         'help': () => ({
           commands: ['screener', 'leaderboard'],
           description: 'Perpetual futures analytics endpoints',

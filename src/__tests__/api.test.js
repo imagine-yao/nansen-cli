@@ -196,6 +196,11 @@ const MOCK_RESPONSES = {
       { address: '0x123', pnl_usd: 500000 }
     ]
   },
+  perpLeaderboard: {
+    leaders: [
+      { address: '0x123', pnl_usd: 200000 }
+    ]
+  },
   // Prediction Market endpoints
   pmOhlcv: {
     data: [
@@ -1175,6 +1180,13 @@ describe('NansenAPI', () => {
         const body = expectFetchCalledWith('/api/v1/tgm/holders');
         expect(body.order_by).toEqual([{ field: 'value_usd', direction: 'DESC' }]);
       });
+
+      it('should pass premium_labels when withLabels is set', async () => {
+        setupMock(MOCK_RESPONSES.tokenHolders);
+        await api.tokenHolders({ tokenAddress: TEST_DATA.solana.token, chain: 'solana', withLabels: true });
+        const body = expectFetchCalledWith('/api/v1/tgm/holders');
+        expect(body.premium_labels).toBe(true);
+      });
     });
 
     describe('tokenFlows', () => {
@@ -1336,6 +1348,31 @@ describe('NansenAPI', () => {
         const body = expectFetchCalledWith('/api/v1/tgm/pnl-leaderboard');
         expect(body.filters.min_total_pnl_usd).toBe(10000);
         expect(body.order_by).toEqual([{ field: 'total_pnl_usd', direction: 'DESC' }]);
+      });
+
+      it('should pass premium_labels=true when withLabels is true', async () => {
+        setupMock(MOCK_RESPONSES.tokenPnlLeaderboard);
+
+        await api.tokenPnlLeaderboard({
+          tokenAddress: TEST_DATA.solana.token,
+          chain: 'solana',
+          withLabels: true
+        });
+
+        const body = expectFetchCalledWith('/api/v1/tgm/pnl-leaderboard');
+        expect(body.premium_labels).toBe(true);
+      });
+
+      it('should not include premium_labels when withLabels is undefined', async () => {
+        setupMock(MOCK_RESPONSES.tokenPnlLeaderboard);
+
+        await api.tokenPnlLeaderboard({
+          tokenAddress: TEST_DATA.solana.token,
+          chain: 'solana'
+        });
+
+        const body = expectFetchCalledWith('/api/v1/tgm/pnl-leaderboard');
+        expect(body.premium_labels).toBeUndefined();
       });
     });
 
@@ -1539,17 +1576,76 @@ describe('NansenAPI', () => {
 
       it('should calculate correct date range for custom days', async () => {
         setupMock(MOCK_RESPONSES.tokenPerpPnlLeaderboard);
-        
+
         await api.tokenPerpPnlLeaderboard({
           tokenSymbol: 'ETH',
           days: 14
         });
-        
+
         const body = expectFetchCalledWith('/api/v1/tgm/perp-pnl-leaderboard');
         const from = new Date(body.date.from);
         const to = new Date(body.date.to);
         const diffDays = Math.round((to - from) / (1000 * 60 * 60 * 24));
         expect(diffDays).toBe(14);
+      });
+
+      it('should pass premium_labels=true when withLabels is true', async () => {
+        setupMock(MOCK_RESPONSES.tokenPerpPnlLeaderboard);
+
+        await api.tokenPerpPnlLeaderboard({
+          tokenSymbol: 'BTC',
+          withLabels: true
+        });
+
+        const body = expectFetchCalledWith('/api/v1/tgm/perp-pnl-leaderboard');
+        expect(body.premium_labels).toBe(true);
+      });
+
+      it('should not include premium_labels when withLabels is undefined', async () => {
+        setupMock(MOCK_RESPONSES.tokenPerpPnlLeaderboard);
+
+        await api.tokenPerpPnlLeaderboard({
+          tokenSymbol: 'BTC'
+        });
+
+        const body = expectFetchCalledWith('/api/v1/tgm/perp-pnl-leaderboard');
+        expect(body.premium_labels).toBeUndefined();
+      });
+    });
+  });
+
+  // =================== Perp Endpoints ===================
+
+  describe('Perp', () => {
+    describe('perpLeaderboard', () => {
+      it('should fetch perp leaderboard with correct endpoint', async () => {
+        setupMock(MOCK_RESPONSES.perpLeaderboard);
+
+        const result = await api.perpLeaderboard({});
+
+        const body = expectFetchCalledWith('/api/v1/perp-leaderboard');
+        expect(body.date).toBeDefined();
+
+        expect(result.leaders).toBeInstanceOf(Array);
+        expect(result.leaders[0]).toHaveProperty('pnl_usd', 200000);
+      });
+
+      it('should pass premium_labels=true when withLabels is true', async () => {
+        setupMock(MOCK_RESPONSES.perpLeaderboard);
+
+        await api.perpLeaderboard({ withLabels: true });
+
+        const body = expectFetchCalledWith('/api/v1/perp-leaderboard');
+        expect(body.premium_labels).toBe(true);
+      });
+
+      it('should not include premium_labels when withLabels is undefined', async () => {
+        setupMock(MOCK_RESPONSES.perpLeaderboard);
+
+        await api.perpLeaderboard({});
+
+        const body = expectFetchCalledWith('/api/v1/perp-leaderboard');
+        expect(body.premium_labels).toBeUndefined();
       });
     });
   });
