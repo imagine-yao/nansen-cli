@@ -691,6 +691,17 @@ describe('NansenAPI', () => {
         expect(result.balances[0]).toHaveProperty('balance_usd', 300000);
       });
 
+      it('should default chain to all when not specified', async () => {
+        setupMock(MOCK_RESPONSES.addressBalance);
+
+        await api.addressBalance({
+          address: TEST_DATA.ethereum.address,
+        });
+
+        const body = expectFetchCalledWith('/api/v1/profiler/address/current-balance');
+        expect(body.chain).toBe('all');
+      });
+
       it('should support entity name lookup', async () => {
         setupMock(MOCK_RESPONSES.addressBalance);
         
