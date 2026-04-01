@@ -85,13 +85,15 @@ nansen trade execute --quote "$quote_id"
 
 ## Amounts
 
-By default, `--amount` accepts **integer base units** (lamports, wei, etc). Use `--amount-unit token` to specify human-readable token amounts instead — the CLI resolves decimals locally and sends base units to the API.
+By default, `--amount` accepts **integer base units** (lamports, wei, etc). Use `--amount-unit token` for human-readable token amounts, or `--amount-unit usd` to specify a USD value — the CLI resolves price and decimals automatically.
 
 ```bash
 # Base units (default)
 nansen trade quote --chain solana --from SOL --to USDC --amount 1000000000
 # Token units (0.5 SOL = 500000000 lamports, resolved automatically)
 nansen trade quote --chain solana --from SOL --to USDC --amount 0.5 --amount-unit token
+# USD amount ($50 worth of SOL, price resolved via Nansen search API)
+nansen trade quote --chain solana --from SOL --to USDC --amount 50 --amount-unit usd
 ```
 
 | Token | Decimals | 1 token = |
@@ -100,9 +102,11 @@ nansen trade quote --chain solana --from SOL --to USDC --amount 0.5 --amount-uni
 | ETH | 18 | `1000000000000000000` |
 | USDC | 6 | `1000000` |
 
-If the user says "$20 worth of X", you must convert USD → token amount, then either pass base units or use `--amount-unit token`. For example, to buy $20 of SOL at $150/SOL: $20 ÷ $150 = 0.1333 SOL → `--amount 0.1333 --amount-unit token`. Use a price lookup (e.g. `nansen research token info`) to get the current price first.
+If the user says "$20 worth of X", use `--amount-unit usd` directly — no manual conversion needed. The CLI fetches the current price and converts for you.
 
 ## Flags
+
+### `trade quote` flags
 
 | Flag | Purpose |
 |------|---------|
@@ -110,15 +114,31 @@ If the user says "$20 worth of X", you must convert USD → token amount, then e
 | `--to-chain` | Destination chain for cross-chain swap (omit for same-chain) |
 | `--from` | Source token (symbol or address) |
 | `--to` | Destination token (symbol or address, resolved against destination chain) |
-| `--amount` | Amount in base units (integer), or token units with `--amount-unit token` |
-| `--amount-unit` | Set to `token` to specify amount in token units (e.g. 0.5 SOL) |
+| `--amount` | Amount in base units (integer), or token/USD units with `--amount-unit` |
+| `--amount-unit` | `token` for token units (e.g. 0.5 SOL), `usd` for USD (e.g. 50), `base` = default |
 | `--wallet` | Wallet name (default: default wallet) |
 | `--to-wallet` | Destination wallet address (auto-derived for cross-chain if omitted) |
 | `--slippage` | Slippage tolerance as decimal (e.g. 0.03) |
-| `--quote` | Quote ID for execute |
+| `--auto-slippage` | Enable auto slippage calculation |
+| `--max-auto-slippage` | Max auto slippage when `--auto-slippage` is enabled |
+| `--swap-mode` | `exactIn` (default) or `exactOut` |
+
+### `trade execute` flags
+
+| Flag | Purpose |
+|------|---------|
+| `--quote` | Quote ID from `trade quote` |
+| `--wallet` | Wallet name (default: default wallet) |
+| `--quote-index` | Pin a specific quote by index (0-based) when multiple quotes were returned |
 | `--no-simulate` | Skip pre-broadcast simulation |
-| `--tx-hash` | Source tx hash (for bridge-status) |
+
+### `trade bridge-status` flags
+
+| Flag | Purpose |
+|------|---------|
+| `--tx-hash` | Source tx hash |
 | `--from-chain` | Source chain (for bridge-status) |
+| `--to-chain` | Destination chain (for bridge-status) |
 
 ## Environment Variables
 
