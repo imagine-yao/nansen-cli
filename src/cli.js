@@ -1110,7 +1110,7 @@ export function buildCommands(deps = {}) {
       const subcommand = args[0] || 'help';
       let address = options.address;
       const entityName = options.entity || options['entity-name'];
-      const chain = options.chain || 'ethereum';
+      const chain = options.chain || 'all';
 
       // Resolve ENS names (e.g. vitalik.eth → 0x...)
       let ensName;

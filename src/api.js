@@ -766,7 +766,7 @@ export class NansenAPI {
   // ============= Profiler Endpoints =============
 
   async addressBalance(params = {}) {
-    const { address, entityName, chain = 'ethereum', hideSpamToken = true, filters = {}, orderBy } = params;
+    const { address, entityName, chain = 'all', hideSpamToken = true, filters = {}, orderBy } = params;
     if (address) {
       const validation = validateAddress(address, chain);
       if (!validation.valid) throw new NansenError(validation.error, validation.code);
