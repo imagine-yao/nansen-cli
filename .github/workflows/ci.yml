@@ -1,4 +1,8 @@
 name: CI
+# WARNING: Do not rename this file. The filename (ci.yml) is registered in the
+# npmjs Trusted Publishing configuration (org + repo + workflow file). Renaming
+# it will break OIDC authentication and npm publishes will fail silently or with
+# a 401. If you must rename it, update the workflow name in npmjs first.
 
 on:
   push:
@@ -58,7 +62,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
@@ -72,8 +76,6 @@ jobs:
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   sync-clawhub:
     needs: publish
