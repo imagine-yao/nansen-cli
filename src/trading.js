@@ -13,7 +13,7 @@ import { base58Decode } from './transfer.js';
 import { keccak256, signSecp256k1, rlpEncode } from './crypto.js';
 import { getWalletConnectAddress, sendTransactionViaWalletConnect, sendSolanaTransactionViaWalletConnect, sendApprovalViaWalletConnect } from './walletconnect-trading.js';
 import { retrievePassword } from './keychain.js';
-import { validateQuoteInput, validateBalance, resolvePercentAmount } from './trade-validation.js';
+import { validateQuoteInput, validateBalance, resolvePercentAmount, validateGasBalance } from './trade-validation.js';
 import { CHAIN_RPCS } from './rpc-urls.js';
 import { packageVersion } from './api.js';
 
@@ -1210,6 +1210,15 @@ EXAMPLES:
 
         log('');
         response.quotes.forEach((q, i) => log(formatQuote(q, i)));
+
+        // Gas balance validation — check that the wallet has enough native token for gas.
+        try {
+          await validateGasBalance({ chain, walletAddress });
+        } catch (gasErr) {
+          log(`Error: ${gasErr.message}`);
+          exit(1);
+          return;
+        }
 
         const signerType = isWalletConnect ? 'walletconnect' : walletProvider;
         const quoteId = saveQuote(response, chain, signerType, privyWalletIds, isCrossChain ? toChainRaw : null);

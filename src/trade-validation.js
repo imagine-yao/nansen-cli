@@ -115,6 +115,7 @@ const NATIVE_TOKEN_ADDRESSES = {
 // Native token symbols for error messages.
 const NATIVE_SYMBOLS = { solana: 'SOL', base: 'ETH' };
 
+const MIN_GAS_AMOUNTS = { solana: 0.01, base: 0.000024 };
 const FEE_BUFFER = { solana: 0.005, base: 0.00004 };
 const HIGH_PERCENTAGE_THRESHOLD = 95;
 const AUTO_ADJUST_THRESHOLD_PERCENT = 2;
@@ -267,6 +268,32 @@ export async function resolvePercentAmount({ chain, from, walletAddress, percent
   }
 
   return String(parseFloat(tokenAmount.toFixed(decimals)));
+}
+
+/**
+ * Validate that the wallet has enough native token for gas fees.
+ *
+ * Returns { hasSufficientNative } or throws on validation failure.
+ * Best-effort: if RPC fails, returns passing result.
+ */
+export async function validateGasBalance({ chain, walletAddress }) {
+  const normalizedChain = chain.toLowerCase();
+  const minGas = MIN_GAS_AMOUNTS[normalizedChain];
+  if (minGas === undefined) return { hasSufficientNative: true };
+
+  const balance = await fetchNativeBalance(normalizedChain, walletAddress);
+
+  // RPC failure — proceed without validation.
+  if (balance === null) return { hasSufficientNative: true };
+
+  if (balance >= minGas) {
+    return { hasSufficientNative: true };
+  }
+
+  const symbol = NATIVE_SYMBOLS[normalizedChain] || 'native token';
+  throw new Error(
+    `Insufficient ${symbol} for gas fees. Wallet has ${balance} ${symbol} but needs at least ${minGas} ${symbol}. Fund the wallet before trading.`
+  );
 }
 
 /**
