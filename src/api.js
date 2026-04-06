@@ -61,6 +61,29 @@ export const ErrorCode = {
 };
 
 /**
+ * Error thrown by command handlers for user-facing failures (validation errors,
+ * missing args, etc.).
+ *
+ * Handlers must throw rather than calling log() + exit() directly, because
+ * direct exits bypass runCLI's catch block and skip telemetry tracking.
+ *
+ * runCLI outputs CommandError.message as plain text (not JSON-formatted like
+ * NansenError), then fires trackCommandFailed before exiting.
+ *
+ * When `data` is provided, runCLI outputs JSON.stringify(data) instead of the
+ * plain message — this preserves structured JSON output for errors that agents
+ * parse (e.g. PASSWORD_REQUIRED, API_KEY_REQUIRED).
+ */
+export class CommandError extends Error {
+  constructor(message, code = 'COMMAND_ERROR', data = null) {
+    super(message);
+    this.name = 'CommandError';
+    this.code = code;
+    this.data = data;
+  }
+}
+
+/**
  * Custom error class with structured error codes
  */
 export class NansenError extends Error {

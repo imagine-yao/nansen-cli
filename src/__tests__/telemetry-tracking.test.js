@@ -113,13 +113,18 @@ describe('telemetry tracking for all first-level commands', () => {
   });
 
   it('login (with --api-key)', async () => {
+    const err = Object.assign(new Error('Unauthorized'), { code: 'UNAUTHORIZED' });
+    function FailingAPI() {
+      return { getAccount: vi.fn().mockRejectedValue(err) };
+    }
     await runCLI(['login', '--api-key', 'test-key'], baseDeps({
+      NansenAPIClass: FailingAPI,
       saveConfigFn: () => {},
       getConfigFileFn: () => '/tmp/fake-config.json',
     }));
     expect(wasTracked()).toBe(1);
-    expect(trackSucceeded).toHaveBeenCalledOnce();
-    expect(trackSucceeded.mock.calls[0][0].command).toBe('login');
+    expect(trackFailed).toHaveBeenCalledOnce();
+    expect(trackFailed.mock.calls[0][0].command).toBe('login');
   });
 
   it('logout', async () => {
@@ -163,8 +168,8 @@ describe('telemetry tracking for all first-level commands', () => {
   it('trade quote (missing args shows usage)', async () => {
     await runCLI(['trade', 'quote'], baseDeps());
     expect(wasTracked()).toBe(1);
-    expect(trackSucceeded).toHaveBeenCalledOnce();
-    expect(trackSucceeded.mock.calls[0][0].command).toBe('trade quote');
+    expect(trackFailed).toHaveBeenCalledOnce();
+    expect(trackFailed.mock.calls[0][0].command).toBe('trade quote');
   });
 
   // ── Error path ──

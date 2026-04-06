@@ -15,7 +15,7 @@ import { getWalletConnectAddress, sendTransactionViaWalletConnect, sendSolanaTra
 import { retrievePassword } from './keychain.js';
 import { validateQuoteInput, validateBalance, resolvePercentAmount, validateGasBalance } from './trade-validation.js';
 import { CHAIN_RPCS } from './rpc-urls.js';
-import { packageVersion } from './api.js';
+import { packageVersion, CommandError } from './api.js';
 
 // ============= Constants =============
 
@@ -943,7 +943,7 @@ export function formatQuote(quote, index) {
  * Build trading command handlers for CLI integration.
  */
 export function buildTradingCommands(deps = {}) {
-  const { log = console.log, exit = process.exit } = deps;
+  const { log = console.log } = deps;
 
   return {
     'quote': async (args, apiInstance, flags, options) => {
@@ -964,7 +964,7 @@ export function buildTradingCommands(deps = {}) {
       const amountUnit = options['amount-unit'];
 
       if (!chain || !from || !to || !amount) {
-        log(`
+        throw new CommandError(`
 Usage: nansen trade quote --chain <chain> --from <token> --to <token> --amount <baseUnits>
 
 PREREQUISITE:
@@ -994,23 +994,17 @@ EXAMPLES:
   nansen trade quote --chain base --from ETH --to USDC --amount 1000000000000000000
   nansen trade quote --chain base --to-chain solana --from USDC --to USDC --amount 1000000
   nansen trade quote --chain solana --to-chain base --from SOL --to ETH --amount 1000000000
-`);
-        exit(1);
-        return;
+`, 'MISSING_ARGS');
       }
 
       // Validate --amount-unit if provided
       if (amountUnit && amountUnit !== 'token' && amountUnit !== 'base' && amountUnit !== 'usd' && amountUnit !== 'percent') {
-        log(`Error: Unknown --amount-unit "${amountUnit}". Supported values: token, base, usd, percent`);
-        exit(1);
-        return;
+        throw new CommandError(`Error: Unknown --amount-unit "${amountUnit}". Supported values: token, base, usd, percent`, 'INVALID_INPUT');
       }
 
       // --amount-unit percent is only valid for exactIn (sell-side)
       if (amountUnit === 'percent' && swapMode === 'exactOut') {
-        log('Error: --amount-unit percent is not supported with --swap-mode exactOut. Percentage is relative to your sell-token balance.');
-        exit(1);
-        return;
+        throw new CommandError('Error: --amount-unit percent is not supported with --swap-mode exactOut. Percentage is relative to your sell-token balance.', 'INVALID_INPUT');
       }
 
       // Static input validation — catches common agent errors (wrong addresses,
@@ -1018,9 +1012,7 @@ EXAMPLES:
       try {
         validateQuoteInput({ chain, toChain: toChainRaw || null, from, to, amount });
       } catch (validationErr) {
-        log(`Error: ${validationErr.message}`);
-        exit(1);
-        return;
+        throw new CommandError(`Error: ${validationErr.message}`, 'INVALID_INPUT');
       }
 
       // When --amount-unit token is used, resolve decimals and convert to base units.
@@ -1039,9 +1031,7 @@ EXAMPLES:
           usdTokenAmount = tokenAmount.toFixed(resolvedDecimals);
           resolvedAmount = convertToBaseUnits(usdTokenAmount, resolvedDecimals);
         } catch (err) {
-          log(`Error converting USD amount: ${err.message}`);
-          exit(1);
-          return;
+          throw new CommandError(`Error converting USD amount: ${err.message}`, 'INVALID_INPUT');
         }
       } else if (amountUnit === 'token') {
         try {
@@ -1049,18 +1039,14 @@ EXAMPLES:
           resolvedDecimals = await resolveTokenDecimals(tokenForDecimals, chain);
           resolvedAmount = convertToBaseUnits(amount, resolvedDecimals);
         } catch (err) {
-          log(`Error resolving token decimals: ${err.message}`);
-          exit(1);
-          return;
+          throw new CommandError(`Error resolving token decimals: ${err.message}`, 'INVALID_INPUT');
         }
       } else if (amountUnit === 'percent') {
         // Resolved after wallet address is available — see percent resolution block below.
       } else {
         const amountError = validateBaseUnitAmount(amount);
         if (amountError) {
-          log(`Error: ${amountError}`);
-          exit(1);
-          return;
+          throw new CommandError(`Error: ${amountError}`, 'INVALID_INPUT');
         }
       }
 
@@ -1076,9 +1062,7 @@ EXAMPLES:
         if (isWalletConnect) {
           walletAddress = await getWalletConnectAddress(chainType);
           if (!walletAddress) {
-            log('No WalletConnect session active. Run: walletconnect connect');
-            exit(1);
-            return;
+            throw new CommandError('No WalletConnect session active. Run: walletconnect connect', 'NO_WALLET');
           }
         } else if (walletName) {
           const wallet = showWallet(walletName);
@@ -1104,9 +1088,7 @@ EXAMPLES:
         }
 
         if (!walletAddress) {
-          log('No wallet found. A wallet address is required for quotes because the trading API builds a transaction specific to the sender.\nCreate one with: nansen wallet create');
-          exit(1);
-          return;
+          throw new CommandError('No wallet found. A wallet address is required for quotes because the trading API builds a transaction specific to the sender.\nCreate one with: nansen wallet create', 'NO_WALLET');
         }
 
         // --amount-unit percent: fetch balance, calculate percentage, convert to base units.
@@ -1123,9 +1105,7 @@ EXAMPLES:
             });
             resolvedAmount = convertToBaseUnits(tokenAmount, resolvedDecimals);
           } catch (err) {
-            log(`Error: ${err.message}`);
-            exit(1);
-            return;
+            throw new CommandError(`Error: ${err.message}`, 'INVALID_INPUT');
           }
         }
 
@@ -1151,9 +1131,7 @@ EXAMPLES:
               resolvedAmount = convertToBaseUnits(balanceAdjusted, resolvedDecimals);
             }
           } catch (balanceErr) {
-            log(`Error: ${balanceErr.message}`);
-            exit(1);
-            return;
+            throw new CommandError(`Error: ${balanceErr.message}`, 'INSUFFICIENT_BALANCE');
           }
         }
 
@@ -1200,12 +1178,11 @@ EXAMPLES:
         const response = await getQuote(params);
 
         if (!response.success || !response.quotes?.length) {
-          log('No quotes available');
+          let msg = 'No quotes available';
           if (response.warnings?.length) {
-            response.warnings.forEach(w => log(`  Warning: ${w}`));
+            msg += '\n' + response.warnings.map(w => `  Warning: ${w}`).join('\n');
           }
-          exit(1);
-          return;
+          throw new CommandError(msg, 'NO_QUOTES');
         }
 
         log('');
@@ -1237,13 +1214,14 @@ EXAMPLES:
         return undefined; // Output already printed above
 
       } catch (err) {
+        if (err instanceof CommandError) throw err;
         let message = err.message;
         if (err.code === 'INVALID_AMOUNT' || /amount/i.test(err.message)) {
           message += '. Amounts must be in base units (e.g., 1000000000 lamports for 1 SOL, 1000000000000000000 wei for 1 ETH)';
         }
-        log(`Error: ${message}`);
-        if (err.details) log(`  Details: ${JSON.stringify(err.details)}`);
-        exit(1);
+        let msg = `Error: ${message}`;
+        if (err.details) msg += `\n  Details: ${JSON.stringify(err.details)}`;
+        throw new CommandError(msg, err.code || 'QUOTE_ERROR');
       }
     },
 
@@ -1253,8 +1231,7 @@ EXAMPLES:
       const noSimulate = flags['no-simulate'];
 
       if (!quoteId) {
-        log(`
-Usage: nansen trade execute --quote <quoteId> [options]
+        throw new CommandError(`Usage: nansen trade execute --quote <quoteId> [options]
 
 OPTIONS:
   --quote <id>              Quote ID from 'nansen quote'
@@ -1262,10 +1239,7 @@ OPTIONS:
   --no-simulate             Skip pre-broadcast simulation
 
 EXAMPLES:
-  nansen trade execute --quote 1708900000000-abc123
-`);
-        exit(1);
-        return;
+  nansen trade execute --quote 1708900000000-abc123`, 'MISSING_ARGS');
       }
 
       try {
@@ -1276,9 +1250,7 @@ EXAMPLES:
 
         const allQuotes = quoteData.response.quotes || [];
         if (!allQuotes.length) {
-          log('❌ No quote data found');
-          exit(1);
-          return;
+          throw new CommandError('❌ No quote data found', 'NO_QUOTES');
         }
 
         // --quote-index pins a specific quote (no fallback)
@@ -1289,10 +1261,7 @@ EXAMPLES:
         // Check if any quote in range has transaction data before prompting for password
         const hasAnyTransaction = allQuotes.slice(startIndex, endIndex).some(q => q?.transaction);
         if (!hasAnyTransaction) {
-          log('❌ No quotes contain transaction data.');
-          log('  Ensure userWalletAddress was provided when fetching the quote.');
-          exit(1);
-          return;
+          throw new CommandError('❌ No quotes contain transaction data.\n  Ensure userWalletAddress was provided when fetching the quote.', 'NO_TRANSACTION');
         }
 
         // Determine if this is a WalletConnect or Privy-signed quote
@@ -1313,16 +1282,14 @@ EXAMPLES:
           if (walletConfig.passwordHash) {
             password = resolveTradePassword();
             if (!password) {
-              log(JSON.stringify({
+              throw new CommandError('Wallet is encrypted and no password was found.', 'PASSWORD_REQUIRED', {
                 error: 'PASSWORD_REQUIRED',
                 message: 'Wallet is encrypted and no password was found.',
                 resolution: [
                   'Set NANSEN_WALLET_PASSWORD environment variable',
                   'Or run: nansen wallet create (password is saved to OS keychain automatically)',
                 ],
-              }));
-              exit(1);
-              return;
+              });
             }
           }
 
@@ -1332,9 +1299,7 @@ EXAMPLES:
             effectiveWalletName = list.defaultWallet;
           }
           if (!effectiveWalletName) {
-            log('No wallet found. Create one with: nansen wallet create');
-            exit(1);
-            return;
+            throw new CommandError('No wallet found. Create one with: nansen wallet create', 'NO_WALLET');
           }
 
           exported = exportWallet(effectiveWalletName, password);
@@ -1342,9 +1307,7 @@ EXAMPLES:
           // Verify WalletConnect session is still active and address matches quote
           const wcAddress = await getWalletConnectAddress(chainType);
           if (!wcAddress) {
-            log('No WalletConnect session active. Run: walletconnect connect');
-            exit(1);
-            return;
+            throw new CommandError('No WalletConnect session active. Run: walletconnect connect', 'NO_WALLET');
           }
           // Check address matches the one used during quoting
           const quoteWallet = quoteData.response?.quotes?.[0]?.transaction?.from
@@ -1352,9 +1315,7 @@ EXAMPLES:
           if (quoteWallet && (chainType === 'solana'
             ? wcAddress.trim() !== quoteWallet.trim()
             : wcAddress.toLowerCase().trim() !== quoteWallet.toLowerCase().trim())) {
-            log(`Connected wallet (${wcAddress}) doesn't match quote. Get a new quote with --wallet walletconnect`);
-            exit(1);
-            return;
+            throw new CommandError(`Connected wallet (${wcAddress}) doesn't match quote. Get a new quote with --wallet walletconnect`, 'WALLET_MISMATCH');
           }
         }
 
@@ -1717,8 +1678,7 @@ EXAMPLES:
                     lastQuoteError = `${quoteName} reverted on-chain`;
                     continue;
                   }
-                  exit(1);
-                  return;
+                  throw new CommandError(`\n  ⚠ Transaction was broadcast but REVERTED on-chain!\n    Tx Hash:   ${wcResult.txHash}\n    Explorer:  ${chainConfig.explorer}${wcResult.txHash}\n    Error:     ${receiptErr.message}`, 'TX_REVERTED');
                 }
 
                 log(`\n  ✓ Transaction successful!`);
@@ -1908,10 +1868,7 @@ EXAMPLES:
                     lastQuoteError = `${quoteName} reverted on-chain`;
                     continue;
                   }
-                  log(`\n  The trading API reported success, but the contract execution failed.`);
-                  log(`  This can happen due to: stale quotes, insufficient gas, or liquidity changes.`);
-                  exit(1);
-                  return;
+                  throw new CommandError(`\n  ⚠ Transaction was broadcast but REVERTED on-chain!\n    Tx Hash:   ${result.txHash}\n    Explorer:  ${explorerUrl}\n    Error:     ${receiptErr.message}\n\n  The trading API reported success, but the contract execution failed.\n  This can happen due to: stale quotes, insufficient gas, or liquidity changes.`, 'TX_REVERTED');
                 }
               }
 
@@ -1966,15 +1923,13 @@ EXAMPLES:
         }
 
         // All quotes exhausted
-        log(`\n❌ All quotes failed. Last error: ${lastQuoteError || 'unknown'}`);
-        log('');
-        exit(1);
-        return undefined;
+        throw new CommandError(`\n❌ All quotes failed. Last error: ${lastQuoteError || 'unknown'}\n`, 'ALL_QUOTES_FAILED');
 
       } catch (err) {
-        log(`Error: ${err.message}`);
-        if (err.details) log(`  Details: ${JSON.stringify(err.details)}`);
-        exit(1);
+        if (err instanceof CommandError) throw err;
+        let msg = `Error: ${err.message}`;
+        if (err.details) msg += `\n  Details: ${JSON.stringify(err.details)}`;
+        throw new CommandError(msg, err.code || 'EXECUTE_ERROR');
       }
     },
 
@@ -1984,8 +1939,7 @@ EXAMPLES:
       const toChain = options['to-chain'] || args[2];
 
       if (!txHash || !fromChain || !toChain) {
-        log(`
-Usage: nansen trade bridge-status --tx-hash <hash> --from-chain <chain> --to-chain <chain>
+        throw new CommandError(`Usage: nansen trade bridge-status --tx-hash <hash> --from-chain <chain> --to-chain <chain>
 
 Check the status of a cross-chain bridge transaction.
 
@@ -1995,10 +1949,7 @@ OPTIONS:
   --to-chain <chain>        Destination chain (solana or base)
 
 EXAMPLES:
-  nansen trade bridge-status --tx-hash 0xabc... --from-chain base --to-chain solana
-`);
-        exit(1);
-        return;
+  nansen trade bridge-status --tx-hash 0xabc... --from-chain base --to-chain solana`, 'MISSING_ARGS');
       }
 
       try {
@@ -2022,9 +1973,10 @@ EXAMPLES:
         if (status.lifiExplorerLink) log(`  Li.Fi:       ${status.lifiExplorerLink}`);
         log('');
       } catch (err) {
-        log(`Error: ${err.message}`);
-        if (err.details) log(`  Details: ${JSON.stringify(err.details)}`);
-        exit(1);
+        if (err instanceof CommandError) throw err;
+        let msg = `Error: ${err.message}`;
+        if (err.details) msg += `\n  Details: ${JSON.stringify(err.details)}`;
+        throw new CommandError(msg, err.code || 'BRIDGE_STATUS_ERROR');
       }
     },
   };

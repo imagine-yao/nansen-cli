@@ -570,35 +570,24 @@ describe('buildApprovalTransaction', () => {
 
 describe('buildTradingCommands', () => {
   it('should show help when required params missing for quote', async () => {
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {});
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('Usage: nansen trade quote'))).toBe(true);
+    await expect(cmds.quote([], null, {}, {})).rejects.toThrow('Usage: nansen trade quote');
   });
 
   it('should show help when quote-id missing for execute', async () => {
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.execute([], null, {}, {});
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('Usage: nansen trade execute'))).toBe(true);
+    await expect(cmds.execute([], null, {}, {})).rejects.toThrow(/Usage: nansen trade execute/);
   });
 
   it('should error when no wallet exists for quote', async () => {
-    const logs = [];
-    let exitCalled = false;
-
     // Mock fetch for the API call
     const origFetch = global.fetch;
     global.fetch = vi.fn().mockResolvedValue({
@@ -607,19 +596,16 @@ describe('buildTradingCommands', () => {
     });
 
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'solana',
       from: 'So11111111111111111111111111111111111111112',
       to: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
       amount: '1000000000',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('No wallet') || l.includes('No default wallet'))).toBe(true);
+    })).rejects.toThrow(/No wallet/);
 
     global.fetch = origFetch;
   });
@@ -647,7 +633,7 @@ describe('buildTradingCommands', () => {
       exit: () => {},
     });
 
-    await cmds.execute([], null, {}, { quote: quoteId });
+    await expect(cmds.execute([], null, {}, { quote: quoteId })).rejects.toThrow(/All quotes failed/);
     expect(logs.some(l => l.includes('non-zero tx.value'))).toBe(true);
 
     delete process.env.NANSEN_WALLET_PASSWORD;
@@ -675,7 +661,7 @@ describe('buildTradingCommands', () => {
       exit: () => {},
     });
 
-    await cmds.execute([], null, {}, { quote: quoteId });
+    await expect(cmds.execute([], null, {}, { quote: quoteId })).rejects.toThrow(/All quotes failed/);
     expect(logs.some(l => l.includes('value mismatch'))).toBe(true);
 
     delete process.env.NANSEN_WALLET_PASSWORD;
@@ -703,8 +689,9 @@ describe('buildTradingCommands', () => {
       exit: () => {},
     });
 
-    await cmds.execute([], null, {}, { quote: quoteId });
-    // Should NOT hit the value validation rejection
+    // Execution will fail later (e.g. at signing/broadcast), but should NOT
+    // fail at the value validation step
+    try { await cmds.execute([], null, {}, { quote: quoteId }); } catch { /* expected */ }
     expect(logs.some(l => l.includes('non-zero tx.value'))).toBe(false);
     expect(logs.some(l => l.includes('value mismatch'))).toBe(false);
 
@@ -733,8 +720,9 @@ describe('buildTradingCommands', () => {
       exit: () => {},
     });
 
-    await cmds.execute([], null, {}, { quote: quoteId });
-    // Should NOT hit the value validation rejection
+    // Execution will fail later (e.g. at signing/broadcast), but should NOT
+    // fail at the value validation step
+    try { await cmds.execute([], null, {}, { quote: quoteId }); } catch { /* expected */ }
     expect(logs.some(l => l.includes('non-zero tx.value'))).toBe(false);
     expect(logs.some(l => l.includes('value mismatch'))).toBe(false);
 
@@ -763,7 +751,7 @@ describe('buildTradingCommands', () => {
       exit: () => {},
     });
 
-    await cmds.execute([], null, {}, { quote: quoteId });
+    await expect(cmds.execute([], null, {}, { quote: quoteId })).rejects.toThrow(/All quotes failed/);
     expect(logs.some(l => l.includes('value mismatch'))).toBe(true);
 
     delete process.env.NANSEN_WALLET_PASSWORD;
@@ -776,16 +764,12 @@ describe('buildTradingCommands', () => {
       quotes: [{ aggregator: 'test', inAmount: '100' }], // no .transaction
     }, 'solana');
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.execute([], null, {}, { quote: quoteId });
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('transaction data'))).toBe(true);
+    await expect(cmds.execute([], null, {}, { quote: quoteId })).rejects.toThrow(/transaction data/);
   });
 });
 
@@ -819,7 +803,7 @@ describe('WalletConnect quote support', () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn(async () => ({
       ok: true,
-      json: () => Promise.resolve({
+      text: async () => JSON.stringify({
         success: true,
         quotes: [{
           aggregator: 'jupiter',
@@ -860,23 +844,18 @@ describe('WalletConnect quote support', () => {
   it('should error when no WalletConnect session for quote', async () => {
     vi.spyOn(wcTrading, 'getWalletConnectAddress').mockResolvedValue(null);
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'base',
       from: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
       to: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
       amount: '1000000000000000000',
       wallet: 'walletconnect',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('No WalletConnect session active'))).toBe(true);
+    })).rejects.toThrow('No WalletConnect session active');
 
     vi.restoreAllMocks();
   });
@@ -884,23 +863,18 @@ describe('WalletConnect quote support', () => {
   it('should accept "wc" as walletconnect alias for quote', async () => {
     vi.spyOn(wcTrading, 'getWalletConnectAddress').mockResolvedValue(null);
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'base',
       from: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
       to: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
       amount: '1000000000000000000',
       wallet: 'wc',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('No WalletConnect session active'))).toBe(true);
+    })).rejects.toThrow('No WalletConnect session active');
 
     vi.restoreAllMocks();
   });
@@ -963,17 +937,12 @@ describe('WalletConnect execute support', () => {
       }],
     }, 'base', 'walletconnect');
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.execute([], null, {}, { quote: quoteId });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('No WalletConnect session active'))).toBe(true);
+    await expect(cmds.execute([], null, {}, { quote: quoteId })).rejects.toThrow(/No WalletConnect session active/);
 
     vi.restoreAllMocks();
   });
@@ -1026,7 +995,9 @@ describe('WalletConnect execute support', () => {
 
     delete process.env.NANSEN_WALLET_PASSWORD;
 
-    await cmds.execute([], null, {}, { quote: quoteId });
+    // Execution may fail at a later step (e.g. base58 decode of mock data),
+    // but it should reach the WalletConnect signing path
+    try { await cmds.execute([], null, {}, { quote: quoteId }); } catch { /* expected */ }
 
     // Should have used WalletConnect path
     expect(logs.some(l => l.includes('WalletConnect'))).toBe(true);
@@ -1350,19 +1321,14 @@ describe('quote handler rejects decimal amounts before API call', () => {
     const origFetch = global.fetch;
     global.fetch = vi.fn();
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'solana', from: 'So11111111111111111111111111111111111111112', to: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: '0.005',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('base units'))).toBe(true);
+    })).rejects.toThrow('base units');
     expect(global.fetch).not.toHaveBeenCalled();
 
     global.fetch = origFetch;
@@ -1562,19 +1528,14 @@ describe('quote command with --amount-unit token', () => {
     const origFetch = global.fetch;
     global.fetch = vi.fn();
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'solana', from: 'SOL', to: 'USDC', amount: '0.5', 'amount-unit': 'foo',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('Supported values: token, base'))).toBe(true);
+    })).rejects.toThrow('Supported values: token, base');
     expect(global.fetch).not.toHaveBeenCalled();
 
     global.fetch = origFetch;
@@ -1584,19 +1545,14 @@ describe('quote command with --amount-unit token', () => {
     const origFetch = global.fetch;
     global.fetch = vi.fn();
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'solana', from: 'SOL', to: 'USDC', amount: '0.5',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('base units'))).toBe(true);
+    })).rejects.toThrow('base units');
     expect(global.fetch).not.toHaveBeenCalled();
 
     global.fetch = origFetch;
@@ -1779,24 +1735,19 @@ describe('quote command with --amount-unit usd', () => {
       }),
     };
 
-    const logs = [];
-    let exitCode = null;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: (code) => { exitCode = code; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], mockApiInstance, {}, {
+    // Should fail with balance error, not reach the quote API
+    await expect(cmds.quote([], mockApiInstance, {}, {
       chain: 'solana',
       from: 'SOL',
       to: 'USDC',
       amount: '50',
       'amount-unit': 'usd',
-    });
-
-    // Should fail with balance error, not reach the quote API
-    expect(exitCode).toBe(1);
-    expect(logs.some(l => /No SOL balance in wallet/.test(l))).toBe(true);
+    })).rejects.toThrow(/No SOL balance in wallet/);
 
     global.fetch = origFetch;
     delete process.env.NANSEN_WALLET_PASSWORD;
@@ -1860,21 +1811,18 @@ describe('quote command with --amount-unit usd', () => {
       generalSearch: vi.fn().mockResolvedValue({ tokens: [] }),
     };
 
-    let exitCalled = false;
     const cmds = buildTradingCommands({
       log: vi.fn(),
-      exit: vi.fn(() => { exitCalled = true; }),
+      exit: vi.fn(),
     });
 
-    await cmds.quote([], mockApiInstance, {}, {
+    await expect(cmds.quote([], mockApiInstance, {}, {
       chain: 'solana',
       from: 'SOL',
       to: 'USDC',
       amount: '50',
       'amount-unit': 'usd',
-    });
-
-    expect(exitCalled).toBe(true);
+    })).rejects.toThrow(/USD/);
 
     global.fetch = origFetch;
     delete process.env.NANSEN_WALLET_PASSWORD;
@@ -1942,24 +1890,19 @@ describe('quote command with --amount-unit percent', () => {
     createWallet('default', 'testpass');
     process.env.NANSEN_WALLET_PASSWORD = 'testpass';
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'solana',
       from: 'SOL',
       to: 'USDC',
       amount: '50',
       'amount-unit': 'percent',
       'swap-mode': 'exactOut',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('percent') && l.includes('exactOut'))).toBe(true);
+    })).rejects.toThrow(/percent.*exactOut/);
 
     delete process.env.NANSEN_WALLET_PASSWORD;
   });
@@ -2024,23 +1967,18 @@ describe('quote command with --amount-unit percent', () => {
     createWallet('default', 'testpass');
     process.env.NANSEN_WALLET_PASSWORD = 'testpass';
 
-    const logs = [];
-    let exitCalled = false;
     const cmds = buildTradingCommands({
-      log: (msg) => logs.push(msg),
-      exit: () => { exitCalled = true; },
+      log: () => {},
+      exit: () => {},
     });
 
-    await cmds.quote([], null, {}, {
+    await expect(cmds.quote([], null, {}, {
       chain: 'solana',
       from: 'SOL',
       to: 'USDC',
       amount: '150',
       'amount-unit': 'percent',
-    });
-
-    expect(exitCalled).toBe(true);
-    expect(logs.some(l => l.includes('100%'))).toBe(true);
+    })).rejects.toThrow(/100%/);
 
     delete process.env.NANSEN_WALLET_PASSWORD;
   });

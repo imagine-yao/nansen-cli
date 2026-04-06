@@ -3,7 +3,7 @@
  * Extracted from index.js for coverage
  */
 
-import { NansenAPI, NansenError, ErrorCode, saveConfig, deleteConfig, getConfigFile, clearCache, getCacheDir, validateAddress, normalizeAddress, sleep } from './api.js';
+import { NansenAPI, NansenError, CommandError, ErrorCode, saveConfig, deleteConfig, getConfigFile, clearCache, getCacheDir, validateAddress, normalizeAddress, sleep } from './api.js';
 import { buildWalletCommands } from './wallet.js';
 import { buildTradingCommands } from './trading.js';
 import { formatAlertsTable, buildAlertsCommands } from './commands/alerts.js';
@@ -793,7 +793,6 @@ export function buildCommands(deps = {}) {
     saveConfigFn = saveConfig,
     deleteConfigFn = deleteConfig,
     getConfigFileFn = getConfigFile,
-    exit = process.exit,
     isTTY = process.stdin.isTTY
   } = deps;
 
@@ -895,12 +894,10 @@ export function buildCommands(deps = {}) {
 
       if (!apiKey && flags.human) {
         if (!isTTY) {
-          log(JSON.stringify({
+          throw new CommandError('--human requires an interactive terminal. Use --api-key or NANSEN_API_KEY env var instead.', 'NOT_A_TTY', {
             error: 'NOT_A_TTY',
             message: '--human requires an interactive terminal. Use --api-key or NANSEN_API_KEY env var instead.',
-          }));
-          exit(1);
-          return;
+          });
         }
         log('Nansen CLI Login\n');
         log('Get your API key at: https://app.nansen.ai/auth/agent-setup\n');
@@ -908,7 +905,7 @@ export function buildCommands(deps = {}) {
       }
 
       if (!apiKey || apiKey.trim().length === 0) {
-        log(JSON.stringify({
+        throw new CommandError('No API key provided.', 'API_KEY_REQUIRED', {
           error: 'API_KEY_REQUIRED',
           message: 'No API key provided.',
           resolution: [
@@ -916,9 +913,7 @@ export function buildCommands(deps = {}) {
             'Or set NANSEN_API_KEY environment variable',
             'Get your API key at: https://app.nansen.ai/auth/agent-setup',
           ],
-        }));
-        exit(1);
-        return;
+        });
       }
 
       // Verify API key before saving
@@ -933,20 +928,17 @@ export function buildCommands(deps = {}) {
         accountInfo = await testApi.getAccount();
       } catch (error) {
         if (error.code === ErrorCode.UNAUTHORIZED) {
-          log(JSON.stringify({
+          throw new CommandError('The API key is not valid.', 'INVALID_API_KEY', {
             error: 'INVALID_API_KEY',
             message: 'The API key is not valid.',
-            resolution: ['Check your key at https://app.nansen.ai/auth/agent-setup']
-          }));
-        } else {
-          log(JSON.stringify({
-            error: 'VERIFICATION_FAILED',
-            message: `Could not verify API key: ${error.message}`,
-            resolution: ['Check your internet connection', 'Try again']
-          }));
+            resolution: ['Check your key at https://app.nansen.ai/auth/agent-setup'],
+          });
         }
-        exit(1);
-        return;
+        throw new CommandError(`Could not verify API key: ${error.message}`, 'VERIFICATION_FAILED', {
+          error: 'VERIFICATION_FAILED',
+          message: `Could not verify API key: ${error.message}`,
+          resolution: ['Check your internet connection', 'Try again'],
+        });
       }
 
       // Key is valid - now save
@@ -1732,7 +1724,7 @@ export async function runCLI(rawArgs, deps = {}) {
     };
     const formatted = formatOutput(errorData, { pretty, table });
     output(formatted.text);
-    trackCommandFailed({ command: fullCommand, duration_ms: Date.now() - startTime, error_code: 'UNKNOWN_COMMAND', flags: usedFlags, chain });
+    await trackCommandFailed({ command: fullCommand, duration_ms: Date.now() - startTime, error_code: 'UNKNOWN_COMMAND', flags: usedFlags, chain });
     exit(1);
     return { type: 'error', data: errorData };
   }
@@ -1759,7 +1751,7 @@ export async function runCLI(rawArgs, deps = {}) {
 
     // Commands that handle their own output return undefined
     if (result === undefined) {
-      trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, flags: usedFlags, chain });
+      await trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, flags: usedFlags, chain });
       return { type: 'no-output', command };
     }
 
@@ -1767,7 +1759,7 @@ export async function runCLI(rawArgs, deps = {}) {
     if (command === 'schema') {
       const formatted = formatOutput(result, { pretty, table: false });
       output(formatted.text);
-      trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, flags: usedFlags, chain });
+      await trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, flags: usedFlags, chain });
       return { type: 'schema', data: result };
     }
 
@@ -1780,6 +1772,7 @@ export async function runCLI(rawArgs, deps = {}) {
     // Alerts list with --table uses custom table format
     if (command === 'alerts' && subcommand === 'list' && table) {
       output(formatAlertsTable(result));
+      await trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, flags: usedFlags, chain });
       return { type: 'success', data: result };
     }
 
@@ -1790,20 +1783,26 @@ export async function runCLI(rawArgs, deps = {}) {
       if (streamOutput) {
         output(streamOutput);
       }
-      trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, from_cache: !!result?.fromCache, flags: usedFlags, chain });
+      await trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, from_cache: !!result?.fromCache, flags: usedFlags, chain });
       return { type: 'stream', data: result };
     }
 
     const successData = { success: true, data: result };
     const formatted = formatOutput(successData, { pretty, table, csv });
     output(formatted.text);
-    trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, from_cache: !!result?.fromCache, flags: usedFlags, chain });
+    await trackCommandSucceeded({ command: fullCommand, duration_ms: Date.now() - startTime, from_cache: !!result?.fromCache, flags: usedFlags, chain });
     return { type: csv ? 'csv' : 'success', data: result };
   } catch (error) {
-    const errorData = formatError(error);
-    const formatted = formatOutput(errorData, { pretty, table, csv });
-    output(formatted.text);
-    trackCommandFailed({
+    let errorData;
+    if (error instanceof CommandError) {
+      output(error.data ? JSON.stringify(error.data) : error.message);
+      errorData = { error: error.message, code: error.code };
+    } else {
+      errorData = formatError(error);
+      const formatted = formatOutput(errorData, { pretty, table, csv });
+      output(formatted.text);
+    }
+    await trackCommandFailed({
       command: fullCommand,
       duration_ms: Date.now() - startTime,
       error_code: error.code || 'UNKNOWN',
