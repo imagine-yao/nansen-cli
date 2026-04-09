@@ -31,7 +31,7 @@ Nansen smart alerts support a **webhook** channel type. When an alert fires, Nan
 
 **This skill does NOT create or modify alerts.** It sets up the listener infrastructure and then provides a summary of what the user needs to do to start receiving alerts.
 
-**OpenClaw users:** This skill requires a persistent local environment. OpenClaw's Gateway has webhook endpoints (`/hooks/wake`, `/hooks/agent`) but they are not publicly reachable from the internet, so Nansen cannot POST to them. Until OpenClaw exposes public webhook ingress, this skill is **local Claude Code only**.
+**OpenClaw users:** If OpenClaw is running locally on the same machine, the webhook server can forward verified alert payloads to OpenClaw's Gateway (`/hooks/agent`), triggering an agent turn for each alert. Set the `OPENCLAW_GATEWAY_URL` env var to enable this. See the **OpenClaw Integration** section below.
 
 ## Security Warning
 
@@ -105,7 +105,8 @@ Create `nansen-webhook-server.mjs` in the current working directory. Use **only*
 | Payload logging | Pretty-print valid JSON payloads to stdout with ISO timestamp |
 | Request size limit | Reject bodies > 1 MB (413) to prevent memory abuse |
 | Graceful shutdown | Handle `SIGINT` and `SIGTERM` — close server, then exit |
-| No dependencies | Only `node:http` and `node:crypto` — nothing from npm |
+| OpenClaw forwarding | If `OPENCLAW_GATEWAY_URL` env var is set, forward verified payloads to `<url>/hooks/agent` via POST. Include `OPENCLAW_AUTH_TOKEN` as Bearer token if set. Log forward success/failure. |
+| No dependencies | Only `node:http`, `node:https`, and `node:crypto` — nothing from npm |
 
 **Signature verification — use timing-safe comparison:**
 
@@ -135,6 +136,10 @@ const PORT = parseInt(process.env.PORT || '9477', 10);
 const SECRET = process.env.WEBHOOK_SECRET;
 const MAX_BODY = 1_048_576; // 1 MB
 
+// Optional: forward verified payloads to a local OpenClaw Gateway
+const OPENCLAW_URL = process.env.OPENCLAW_GATEWAY_URL; // e.g. http://localhost:3000
+const OPENCLAW_TOKEN = process.env.OPENCLAW_AUTH_TOKEN;
+
 if (!SECRET || SECRET.length < 16) {
   console.error('WEBHOOK_SECRET env var required (minimum 16 characters).');
   console.error('Generate one: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
@@ -150,6 +155,27 @@ function verifySignature(rawBody, signatureHeader) {
     return timingSafeEqual(Buffer.from(sig, 'utf8'), Buffer.from(expected, 'utf8'));
   } catch {
     return false;
+  }
+}
+
+async function forwardToOpenClaw(payload) {
+  if (!OPENCLAW_URL) return;
+  const url = `${OPENCLAW_URL.replace(/\/+$/, '')}/hooks/agent`;
+  const headers = { 'Content-Type': 'application/json' };
+  if (OPENCLAW_TOKEN) headers['Authorization'] = `Bearer ${OPENCLAW_TOKEN}`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      console.log(`[${ts()}] Forwarded to OpenClaw (${res.status})`);
+    } else {
+      console.error(`[${ts()}] OpenClaw forward failed (${res.status})`);
+    }
+  } catch (err) {
+    console.error(`[${ts()}] OpenClaw forward error: ${err.message}`);
   }
 }
 
@@ -192,13 +218,17 @@ const server = createServer((req, res) => {
       return res.end('{"error":"Invalid signature"}');
     }
 
+    let payload;
     try {
-      const payload = JSON.parse(rawBody);
+      payload = JSON.parse(rawBody);
       console.log(`\n[${ts()}] Alert received:`);
       console.log(JSON.stringify(payload, null, 2));
     } catch {
       console.error(`[${ts()}] WARNING — valid signature but malformed JSON`);
     }
+
+    // Forward to OpenClaw if configured (fire-and-forget — don't block response)
+    if (payload) forwardToOpenClaw(payload);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end('{"received":true}');
@@ -214,6 +244,7 @@ for (const sig of ['SIGINT', 'SIGTERM']) {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`Webhook listener ready — http://127.0.0.1:${PORT}/webhook`);
+  if (OPENCLAW_URL) console.log(`OpenClaw forwarding → ${OPENCLAW_URL}/hooks/agent`);
   console.log('Waiting for alerts… (Ctrl+C to stop)\n');
 });
 ```
@@ -314,6 +345,38 @@ See `nansen alerts create --help` for full flag reference per alert type.
 | No alerts arriving | Check `nansen alerts list --table` — is the alert enabled? Is the webhook URL correct (includes `/webhook`)? |
 | Tunnel URL expired / tunnel died | Restart the tunnel, get the new URL, then `nansen alerts update <id> --webhook '<new-url>/webhook'`. If this keeps happening, switch from localtunnel to ngrok. |
 | Port already in use | Set a different port: `PORT=9478 WEBHOOK_SECRET='...' node nansen-webhook-server.mjs` and update the tunnel accordingly |
+
+## OpenClaw Integration
+
+If the user is running OpenClaw locally on the same machine, the webhook server can forward verified alert payloads to OpenClaw's Gateway, triggering an agent turn for each alert.
+
+**Flow:** `Nansen → ngrok → webhook server (signature check) → OpenClaw /hooks/agent`
+
+### Additional env vars
+
+| Var | Required | Purpose |
+|-----|----------|---------|
+| `OPENCLAW_GATEWAY_URL` | Yes | OpenClaw Gateway base URL (e.g. `http://localhost:3000`) |
+| `OPENCLAW_AUTH_TOKEN` | If auth enabled | Bearer token for OpenClaw webhook endpoints |
+
+### Start command (with OpenClaw forwarding)
+
+```bash
+WEBHOOK_SECRET='<secret>' \
+OPENCLAW_GATEWAY_URL='http://localhost:3000' \
+OPENCLAW_AUTH_TOKEN='<token>' \
+node nansen-webhook-server.mjs
+```
+
+The server logs both the alert payload and the OpenClaw forward status. If OpenClaw is unreachable, the forward fails silently (the alert is still logged to stdout).
+
+### Ask the user
+
+Before enabling OpenClaw forwarding, ask:
+1. Is OpenClaw running locally? What port?
+2. Does their Gateway require auth? If so, what's the Bearer token?
+
+If they don't know or aren't running OpenClaw, skip — the server works fine standalone.
 
 ## Notes
 
