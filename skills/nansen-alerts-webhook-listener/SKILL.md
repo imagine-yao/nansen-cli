@@ -31,7 +31,7 @@ Nansen smart alerts support a **webhook** channel type. When an alert fires, Nan
 
 **This skill does NOT create or modify alerts.** It sets up the listener infrastructure and then provides a summary of what the user needs to do to start receiving alerts.
 
-**OpenClaw users:** This skill currently requires a persistent local environment (it runs a long-lived HTTP server + tunnel). OpenClaw's ephemeral containers are not suitable for this. OpenClaw webhook support is planned — once available, OpenClaw users will be able to receive alerts without a local server. For now, this skill is **local Claude Code only**.
+**OpenClaw users:** This skill requires a persistent local environment. OpenClaw's Gateway has webhook endpoints (`/hooks/wake`, `/hooks/agent`) but they are not publicly reachable from the internet, so Nansen cannot POST to them. Until OpenClaw exposes public webhook ingress, this skill is **local Claude Code only**.
 
 ## Security Warning
 
