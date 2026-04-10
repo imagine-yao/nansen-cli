@@ -554,7 +554,8 @@
               "options": {
                 "market-id": {
                   "required": true
-                }
+                },
+                "sort-direction": {}
               }
             },
             "orderbook": {
@@ -572,7 +573,8 @@
               "options": {
                 "market-id": {
                   "required": true
-                }
+                },
+                "sort-direction": {}
               }
             },
             "trades-by-market": {
@@ -581,7 +583,8 @@
               "options": {
                 "market-id": {
                   "required": true
-                }
+                },
+                "sort-direction": {}
               }
             },
             "market-screener": {
@@ -593,8 +596,10 @@
                 "tags": {},
                 "min-liquidity": {},
                 "max-liquidity": {},
+                "min-unique-traders-24h": {},
                 "max-unique-traders-24h": {},
                 "min-volume-24hr": {},
+                "max-volume-24hr": {},
                 "neg-risk": {},
                 "min-open-interest": {},
                 "max-open-interest": {},
@@ -613,8 +618,10 @@
                 "tags": {},
                 "min-liquidity": {},
                 "max-liquidity": {},
+                "min-unique-traders-24h": {},
                 "max-unique-traders-24h": {},
                 "min-volume-24hr": {},
+                "max-volume-24hr": {},
                 "neg-risk": {},
                 "min-open-interest": {},
                 "max-open-interest": {},
@@ -628,7 +635,8 @@
               "options": {
                 "market-id": {
                   "required": true
-                }
+                },
+                "sort-direction": {}
               }
             },
             "pnl-by-address": {
@@ -637,7 +645,8 @@
               "options": {
                 "address": {
                   "required": true
-                }
+                },
+                "sort-direction": {}
               }
             },
             "position-detail": {
@@ -655,7 +664,8 @@
               "options": {
                 "address": {
                   "required": true
-                }
+                },
+                "sort-direction": {}
               }
             },
             "categories": {

@@ -1283,7 +1283,7 @@ export class NansenAPI {
   }
 
   async pmMarketScreener(params = {}) {
-    const { sortBy = 'volume_24hr', sortDirection, query = '', status = '', tags, minLiquidity, maxLiquidity, maxUniqueTraders24h, minVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination } = params;
+    const { sortBy = 'volume_24hr', sortDirection, query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination } = params;
     const body = {
       sort_by: sortBy,
       sort_direction: sortDirection,
@@ -1294,8 +1294,10 @@ export class NansenAPI {
     if (tags && tags.length) body.tags = tags;
     if (minLiquidity != null) body.min_liquidity = minLiquidity;
     if (maxLiquidity != null) body.max_liquidity = maxLiquidity;
+    if (minUniqueTraders24h != null) body.min_unique_traders_24h = minUniqueTraders24h;
     if (maxUniqueTraders24h != null) body.max_unique_traders_24h = maxUniqueTraders24h;
     if (minVolume24hr != null) body.min_volume_24hr = minVolume24hr;
+    if (maxVolume24hr != null) body.max_volume_24hr = maxVolume24hr;
     if (negRisk != null) body.neg_risk = negRisk;
     if (minOpenInterest != null) body.min_open_interest = minOpenInterest;
     if (maxOpenInterest != null) body.max_open_interest = maxOpenInterest;
@@ -1307,7 +1309,7 @@ export class NansenAPI {
   }
 
   async pmEventScreener(params = {}) {
-    const { sortBy = 'volume_24hr', sortDirection, query = '', status = '', tags, minLiquidity, maxLiquidity, maxUniqueTraders24h, minVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination } = params;
+    const { sortBy = 'volume_24hr', sortDirection, query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination } = params;
     const body = {
       sort_by: sortBy,
       sort_direction: sortDirection,
@@ -1318,8 +1320,10 @@ export class NansenAPI {
     if (tags && tags.length) body.tags = tags;
     if (minLiquidity != null) body.min_liquidity = minLiquidity;
     if (maxLiquidity != null) body.max_liquidity = maxLiquidity;
+    if (minUniqueTraders24h != null) body.min_unique_traders_24h = minUniqueTraders24h;
     if (maxUniqueTraders24h != null) body.max_unique_traders_24h = maxUniqueTraders24h;
     if (minVolume24hr != null) body.min_volume_24hr = minVolume24hr;
+    if (maxVolume24hr != null) body.max_volume_24hr = maxVolume24hr;
     if (negRisk != null) body.neg_risk = negRisk;
     if (minOpenInterest != null) body.min_open_interest = minOpenInterest;
     if (maxOpenInterest != null) body.max_open_interest = maxOpenInterest;

@@ -268,6 +268,19 @@ const MOCK_RESPONSES = {
     ],
     pagination: { page: 1, per_page: 100 }
   },
+  pmAddressSummary: {
+    address: '0x1234567890abcdef1234567890abcdef12345678',
+    first_seen: '2024-01-15T00:00:00Z',
+    wallet_age_days: 450,
+    realized_pnl_usd: 12500,
+    unrealized_pnl_usd: 3200,
+    total_pnl_usd: 15700,
+    markets_won: 8,
+    markets_traded: 15,
+    win_rate: 0.533,
+    p2p_tokens_sent: 5000,
+    p2p_tokens_received: 3000
+  },
   // Smart Alert endpoints
   alertsList: [
     { id: 'alert-1', name: 'ETH SM Flows', type: 'sm-token-flows', isEnabled: true }
@@ -1913,6 +1926,195 @@ describe('NansenAPI', () => {
         await api.pmCategories({ pagination: { page: 1, per_page: 10 } });
         const body = expectFetchCalledWith('/api/v1/prediction-market/categories');
         expect(body.pagination).toEqual({ page: 1, per_page: 10 });
+      });
+    });
+
+    describe('pmAddressSummary', () => {
+      it('should fetch address summary with correct endpoint', async () => {
+        setupMock(MOCK_RESPONSES.pmAddressSummary);
+        const result = await api.pmAddressSummary({ address: '0x1234567890abcdef1234567890abcdef12345678' });
+        expectFetchCalledWith('/api/v1/prediction-market/address-summary', { address: '0x1234567890abcdef1234567890abcdef12345678' });
+        expect(result).toHaveProperty('total_pnl_usd', 15700);
+        expect(result).toHaveProperty('win_rate', 0.533);
+        expect(result).toHaveProperty('markets_traded', 15);
+      });
+
+      it('should validate address format', async () => {
+        try {
+          await api.pmAddressSummary({ address: 'invalid' });
+        } catch (e) {
+          expect(e.code).toBe(ErrorCode.INVALID_ADDRESS);
+        }
+      });
+
+      it('should require address', async () => {
+        try {
+          await api.pmAddressSummary({});
+        } catch (e) {
+          expect(e.code).toBe(ErrorCode.MISSING_PARAM);
+        }
+      });
+    });
+
+    describe('sort_direction parameter', () => {
+      it('should pass sort_direction to pmOhlcv', async () => {
+        setupMock(MOCK_RESPONSES.pmOhlcv);
+        await api.pmOhlcv({ marketId: '654412', sortDirection: 'asc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/ohlcv');
+        expect(body.sort_direction).toBe('asc');
+      });
+
+      it('should pass sort_direction to pmTopHolders', async () => {
+        setupMock(MOCK_RESPONSES.pmTopHolders);
+        await api.pmTopHolders({ marketId: '654412', sortDirection: 'desc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/top-holders');
+        expect(body.sort_direction).toBe('desc');
+      });
+
+      it('should pass sort_direction to pmTradesByMarket', async () => {
+        setupMock(MOCK_RESPONSES.pmTradesByMarket);
+        await api.pmTradesByMarket({ marketId: '654412', sortDirection: 'asc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/trades-by-market');
+        expect(body.sort_direction).toBe('asc');
+      });
+
+      it('should pass sort_direction to pmTradesByAddress', async () => {
+        setupMock(MOCK_RESPONSES.pmTradesByAddress);
+        await api.pmTradesByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', sortDirection: 'desc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/trades-by-address');
+        expect(body.sort_direction).toBe('desc');
+      });
+
+      it('should pass sort_direction to pmPnlByMarket', async () => {
+        setupMock(MOCK_RESPONSES.pmPnlByMarket);
+        await api.pmPnlByMarket({ marketId: '654412', sortDirection: 'asc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/pnl-by-market');
+        expect(body.sort_direction).toBe('asc');
+      });
+
+      it('should pass sort_direction to pmPnlByAddress', async () => {
+        setupMock(MOCK_RESPONSES.pmPnlByAddress);
+        await api.pmPnlByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', sortDirection: 'desc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/pnl-by-address');
+        expect(body.sort_direction).toBe('desc');
+      });
+    });
+
+    describe('pmMarketScreener (filters)', () => {
+      it('should pass sort_direction', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ sortDirection: 'asc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.sort_direction).toBe('asc');
+      });
+
+      it('should pass volume filters', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ minVolume24hr: 1000, maxVolume24hr: 50000 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.min_volume_24hr).toBe(1000);
+        expect(body.max_volume_24hr).toBe(50000);
+      });
+
+      it('should pass liquidity filters', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ minLiquidity: 5000, maxLiquidity: 100000 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.min_liquidity).toBe(5000);
+        expect(body.max_liquidity).toBe(100000);
+      });
+
+      it('should pass open interest filters', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ minOpenInterest: 10000, maxOpenInterest: 500000 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.min_open_interest).toBe(10000);
+        expect(body.max_open_interest).toBe(500000);
+      });
+
+      it('should pass unique traders filters', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ minUniqueTraders24h: 10, maxUniqueTraders24h: 500 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.min_unique_traders_24h).toBe(10);
+        expect(body.max_unique_traders_24h).toBe(500);
+      });
+
+      it('should pass neg_risk boolean', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ negRisk: true });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.neg_risk).toBe(true);
+      });
+
+      it('should pass tags as array', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ tags: ['crypto', 'sports'] });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.tags).toEqual(['crypto', 'sports']);
+      });
+
+      it('should pass price filters', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ minPrice: 0.1, maxPrice: 0.9 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.min_price).toBe(0.1);
+        expect(body.max_price).toBe(0.9);
+      });
+
+      it('should pass date filters', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ endDateBefore: '2025-12-31', endDateAfter: '2025-01-01' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.end_date_before).toBe('2025-12-31');
+        expect(body.end_date_after).toBe('2025-01-01');
+      });
+
+      it('should not include filters when not provided', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({});
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body).not.toHaveProperty('min_volume_24hr');
+        expect(body).not.toHaveProperty('max_volume_24hr');
+        expect(body).not.toHaveProperty('tags');
+        expect(body).not.toHaveProperty('neg_risk');
+      });
+    });
+
+    describe('pmEventScreener (filters)', () => {
+      it('should pass sort_direction', async () => {
+        setupMock(MOCK_RESPONSES.pmEventScreener);
+        await api.pmEventScreener({ sortDirection: 'asc' });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/event-screener');
+        expect(body.sort_direction).toBe('asc');
+      });
+
+      it('should pass volume and liquidity filters', async () => {
+        setupMock(MOCK_RESPONSES.pmEventScreener);
+        await api.pmEventScreener({ minVolume24hr: 1000, maxVolume24hr: 50000, minLiquidity: 5000, maxLiquidity: 100000 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/event-screener');
+        expect(body.min_volume_24hr).toBe(1000);
+        expect(body.max_volume_24hr).toBe(50000);
+        expect(body.min_liquidity).toBe(5000);
+        expect(body.max_liquidity).toBe(100000);
+      });
+
+      it('should pass unique traders and open interest filters', async () => {
+        setupMock(MOCK_RESPONSES.pmEventScreener);
+        await api.pmEventScreener({ minUniqueTraders24h: 10, maxUniqueTraders24h: 500, minOpenInterest: 1000, maxOpenInterest: 100000 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/event-screener');
+        expect(body.min_unique_traders_24h).toBe(10);
+        expect(body.max_unique_traders_24h).toBe(500);
+        expect(body.min_open_interest).toBe(1000);
+        expect(body.max_open_interest).toBe(100000);
+      });
+
+      it('should pass neg_risk and tags', async () => {
+        setupMock(MOCK_RESPONSES.pmEventScreener);
+        await api.pmEventScreener({ negRisk: false, tags: ['politics'] });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/event-screener');
+        expect(body.neg_risk).toBe(false);
+        expect(body.tags).toEqual(['politics']);
       });
     });
   });

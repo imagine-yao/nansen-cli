@@ -1415,8 +1415,10 @@ export function buildCommands(deps = {}) {
       const tags = options.tags ? options.tags.split(',').map(t => t.trim()) : undefined;
       const minLiquidity = options['min-liquidity'] != null ? Number(options['min-liquidity']) : undefined;
       const maxLiquidity = options['max-liquidity'] != null ? Number(options['max-liquidity']) : undefined;
+      const minUniqueTraders24h = options['min-unique-traders-24h'] != null ? Number(options['min-unique-traders-24h']) : undefined;
       const maxUniqueTraders24h = options['max-unique-traders-24h'] != null ? Number(options['max-unique-traders-24h']) : undefined;
       const minVolume24hr = options['min-volume-24hr'] != null ? Number(options['min-volume-24hr']) : undefined;
+      const maxVolume24hr = options['max-volume-24hr'] != null ? Number(options['max-volume-24hr']) : undefined;
       const negRisk = options['neg-risk'] != null ? options['neg-risk'] === 'true' : undefined;
       const minOpenInterest = options['min-open-interest'] != null ? Number(options['min-open-interest']) : undefined;
       const maxOpenInterest = options['max-open-interest'] != null ? Number(options['max-open-interest']) : undefined;
@@ -1431,8 +1433,8 @@ export function buildCommands(deps = {}) {
         'top-holders': () => apiInstance.pmTopHolders({ marketId, sort, sortDirection, pagination }),
         'trades-by-market': () => apiInstance.pmTradesByMarket({ marketId, sortDirection, pagination }),
         'trades-by-address': () => apiInstance.pmTradesByAddress({ address, sortDirection, pagination }),
-        'market-screener': () => apiInstance.pmMarketScreener({ sortBy, sortDirection, query, status, tags, minLiquidity, maxLiquidity, maxUniqueTraders24h, minVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination }),
-        'event-screener': () => apiInstance.pmEventScreener({ sortBy, sortDirection, query, status, tags, minLiquidity, maxLiquidity, maxUniqueTraders24h, minVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination }),
+        'market-screener': () => apiInstance.pmMarketScreener({ sortBy, sortDirection, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination }),
+        'event-screener': () => apiInstance.pmEventScreener({ sortBy, sortDirection, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination }),
         'pnl-by-market': () => apiInstance.pmPnlByMarket({ marketId, sortDirection, pagination }),
         'pnl-by-address': () => apiInstance.pmPnlByAddress({ address, sortDirection, pagination }),
         'position-detail': () => apiInstance.pmPositionDetail({ marketId, pagination }),
