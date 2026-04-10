@@ -1411,6 +1411,11 @@ export function buildCommands(deps = {}) {
       const sort = parseSort(options.sort);
       const pagination = buildPagination(options);
 
+      // Build order_by for screeners from --sort-by + --sort-direction
+      const screenerOrderBy = (sortBy || sortDirection)
+        ? [{ field: sortBy || 'volume_24hr', direction: (sortDirection || 'desc').toUpperCase() }]
+        : undefined;
+
       // Screener-specific filter options
       const tags = options.tags ? options.tags.split(',').map(t => t.trim()) : undefined;
       const minLiquidity = options['min-liquidity'] != null ? Number(options['min-liquidity']) : undefined;
@@ -1428,15 +1433,15 @@ export function buildCommands(deps = {}) {
       const maxPrice = options['max-price'] != null ? Number(options['max-price']) : undefined;
 
       const handlers = {
-        'ohlcv': () => apiInstance.pmOhlcv({ marketId, sort, sortDirection, pagination }),
+        'ohlcv': () => apiInstance.pmOhlcv({ marketId, orderBy: sort, pagination }),
         'orderbook': () => apiInstance.pmOrderbook({ marketId, pagination }),
-        'top-holders': () => apiInstance.pmTopHolders({ marketId, sort, sortDirection, pagination }),
-        'trades-by-market': () => apiInstance.pmTradesByMarket({ marketId, sortDirection, pagination }),
-        'trades-by-address': () => apiInstance.pmTradesByAddress({ address, sortDirection, pagination }),
-        'market-screener': () => apiInstance.pmMarketScreener({ sortBy, sortDirection, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination }),
-        'event-screener': () => apiInstance.pmEventScreener({ sortBy, sortDirection, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination }),
-        'pnl-by-market': () => apiInstance.pmPnlByMarket({ marketId, sortDirection, pagination }),
-        'pnl-by-address': () => apiInstance.pmPnlByAddress({ address, sortDirection, pagination }),
+        'top-holders': () => apiInstance.pmTopHolders({ marketId, orderBy: sort, pagination }),
+        'trades-by-market': () => apiInstance.pmTradesByMarket({ marketId, orderBy: sort, pagination }),
+        'trades-by-address': () => apiInstance.pmTradesByAddress({ address, orderBy: sort, pagination }),
+        'market-screener': () => apiInstance.pmMarketScreener({ orderBy: screenerOrderBy, sortBy, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination }),
+        'event-screener': () => apiInstance.pmEventScreener({ orderBy: screenerOrderBy, sortBy, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination }),
+        'pnl-by-market': () => apiInstance.pmPnlByMarket({ marketId, orderBy: sort, pagination }),
+        'pnl-by-address': () => apiInstance.pmPnlByAddress({ address, orderBy: sort, pagination }),
         'position-detail': () => apiInstance.pmPositionDetail({ marketId, pagination }),
         'categories': () => apiInstance.pmCategories({ pagination }),
         'address-summary': () => apiInstance.pmAddressSummary({ address, pagination }),

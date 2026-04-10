@@ -554,8 +554,7 @@
               "options": {
                 "market-id": {
                   "required": true
-                },
-                "sort-direction": {}
+                }
               }
             },
             "orderbook": {
@@ -573,8 +572,7 @@
               "options": {
                 "market-id": {
                   "required": true
-                },
-                "sort-direction": {}
+                }
               }
             },
             "trades-by-market": {
@@ -583,8 +581,7 @@
               "options": {
                 "market-id": {
                   "required": true
-                },
-                "sort-direction": {}
+                }
               }
             },
             "market-screener": {
@@ -592,7 +589,8 @@
               "description": "Get Prediction Market Screener",
               "options": {
                 "query": { "default": "" },
-                "sort-direction": { "default": "desc" },
+                "sort-by": { "description": "Sort field (default: volume_24hr). Use with --sort-direction." },
+                "sort-direction": { "description": "Sort direction: asc or desc (default: desc). Combines with --sort-by into order_by." },
                 "tags": {},
                 "min-liquidity": {},
                 "max-liquidity": {},
@@ -614,7 +612,8 @@
               "description": "Get Prediction Market Event Screener",
               "options": {
                 "query": { "default": "" },
-                "sort-direction": { "default": "desc" },
+                "sort-by": { "description": "Sort field (default: volume_24hr). Use with --sort-direction." },
+                "sort-direction": { "description": "Sort direction: asc or desc (default: desc). Combines with --sort-by into order_by." },
                 "tags": {},
                 "min-liquidity": {},
                 "max-liquidity": {},
@@ -635,8 +634,7 @@
               "options": {
                 "market-id": {
                   "required": true
-                },
-                "sort-direction": {}
+                }
               }
             },
             "pnl-by-address": {
@@ -645,8 +643,7 @@
               "options": {
                 "address": {
                   "required": true
-                },
-                "sort-direction": {}
+                }
               }
             },
             "position-detail": {
@@ -664,8 +661,7 @@
               "options": {
                 "address": {
                   "required": true
-                },
-                "sort-direction": {}
+                }
               }
             },
             "categories": {
