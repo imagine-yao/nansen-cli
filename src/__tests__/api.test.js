@@ -1957,53 +1957,67 @@ describe('NansenAPI', () => {
     });
 
     describe('order_by parameter', () => {
-      it('should pass order_by to pmOhlcv', async () => {
+      it('should send both order_by and sort for backward compat on pmOhlcv', async () => {
         setupMock(MOCK_RESPONSES.pmOhlcv);
-        await api.pmOhlcv({ marketId: '654412', orderBy: [{ field: 'volume_usd', direction: 'ASC' }] });
+        const orderBy = [{ field: 'volume_usd', direction: 'ASC' }];
+        await api.pmOhlcv({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/ohlcv');
-        expect(body.order_by).toEqual([{ field: 'volume_usd', direction: 'ASC' }]);
+        expect(body.order_by).toEqual(orderBy);
+        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should fall back to sort for pmOhlcv', async () => {
+      it('should fall back to sort param for pmOhlcv when no orderBy', async () => {
         setupMock(MOCK_RESPONSES.pmOhlcv);
-        await api.pmOhlcv({ marketId: '654412', sort: [{ field: 'period_start', direction: 'DESC' }] });
+        const sort = [{ field: 'period_start', direction: 'DESC' }];
+        await api.pmOhlcv({ marketId: '654412', sort });
         const body = expectFetchCalledWith('/api/v1/prediction-market/ohlcv');
-        expect(body.order_by).toEqual([{ field: 'period_start', direction: 'DESC' }]);
+        expect(body.order_by).toEqual(sort);
+        expect(body.sort).toEqual(sort);
       });
 
-      it('should pass order_by to pmTopHolders', async () => {
+      it('should send both order_by and sort for backward compat on pmTopHolders', async () => {
         setupMock(MOCK_RESPONSES.pmTopHolders);
-        await api.pmTopHolders({ marketId: '654412', orderBy: [{ field: 'position_size', direction: 'ASC' }] });
+        const orderBy = [{ field: 'position_size', direction: 'ASC' }];
+        await api.pmTopHolders({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/top-holders');
-        expect(body.order_by).toEqual([{ field: 'position_size', direction: 'ASC' }]);
+        expect(body.order_by).toEqual(orderBy);
+        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should pass order_by to pmTradesByMarket', async () => {
+      it('should send both order_by and sort on pmTradesByMarket', async () => {
         setupMock(MOCK_RESPONSES.pmTradesByMarket);
-        await api.pmTradesByMarket({ marketId: '654412', orderBy: [{ field: 'timestamp', direction: 'ASC' }] });
+        const orderBy = [{ field: 'timestamp', direction: 'ASC' }];
+        await api.pmTradesByMarket({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/trades-by-market');
-        expect(body.order_by).toEqual([{ field: 'timestamp', direction: 'ASC' }]);
+        expect(body.order_by).toEqual(orderBy);
+        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should pass order_by to pmTradesByAddress', async () => {
+      it('should send both order_by and sort on pmTradesByAddress', async () => {
         setupMock(MOCK_RESPONSES.pmTradesByAddress);
-        await api.pmTradesByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', orderBy: [{ field: 'timestamp', direction: 'DESC' }] });
+        const orderBy = [{ field: 'timestamp', direction: 'DESC' }];
+        await api.pmTradesByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/trades-by-address');
-        expect(body.order_by).toEqual([{ field: 'timestamp', direction: 'DESC' }]);
+        expect(body.order_by).toEqual(orderBy);
+        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should pass order_by to pmPnlByMarket', async () => {
+      it('should send both order_by and sort on pmPnlByMarket', async () => {
         setupMock(MOCK_RESPONSES.pmPnlByMarket);
-        await api.pmPnlByMarket({ marketId: '654412', orderBy: [{ field: 'total_pnl_usd', direction: 'ASC' }] });
+        const orderBy = [{ field: 'total_pnl_usd', direction: 'ASC' }];
+        await api.pmPnlByMarket({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/pnl-by-market');
-        expect(body.order_by).toEqual([{ field: 'total_pnl_usd', direction: 'ASC' }]);
+        expect(body.order_by).toEqual(orderBy);
+        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should pass order_by to pmPnlByAddress', async () => {
+      it('should send both order_by and sort on pmPnlByAddress', async () => {
         setupMock(MOCK_RESPONSES.pmPnlByAddress);
-        await api.pmPnlByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', orderBy: [{ field: 'total_pnl_usd', direction: 'DESC' }] });
+        const orderBy = [{ field: 'total_pnl_usd', direction: 'DESC' }];
+        await api.pmPnlByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/pnl-by-address');
-        expect(body.order_by).toEqual([{ field: 'total_pnl_usd', direction: 'DESC' }]);
+        expect(body.order_by).toEqual(orderBy);
+        expect(body.sort).toEqual(orderBy);
       });
     });
 
@@ -2094,6 +2108,15 @@ describe('NansenAPI', () => {
         expect(body).not.toHaveProperty('max_volume_24hr');
         expect(body).not.toHaveProperty('tags');
         expect(body).not.toHaveProperty('neg_risk');
+      });
+
+      it('should pass 0 as a valid filter value (not sentinel)', async () => {
+        setupMock(MOCK_RESPONSES.pmMarketScreener);
+        await api.pmMarketScreener({ minLiquidity: 0, maxLiquidity: 0, minVolume24hr: 0 });
+        const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.min_liquidity).toBe(0);
+        expect(body.max_liquidity).toBe(0);
+        expect(body.min_volume_24hr).toBe(0);
       });
     });
 
