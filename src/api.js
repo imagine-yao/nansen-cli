@@ -1232,11 +1232,9 @@ export class NansenAPI {
   async pmOhlcv(params = {}) {
     const { marketId, orderBy, sort, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
-    const effectiveSort = orderBy || sort;
     return this.request('/api/v1/prediction-market/ohlcv', {
       market_id: marketId,
-      order_by: effectiveSort,
-      sort: effectiveSort,
+      order_by: orderBy || sort,
       pagination
     });
   }
@@ -1253,11 +1251,9 @@ export class NansenAPI {
   async pmTopHolders(params = {}) {
     const { marketId, orderBy, sort, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
-    const effectiveSort = orderBy || sort;
     return this.request('/api/v1/prediction-market/top-holders', {
       market_id: marketId,
-      order_by: effectiveSort,
-      sort: effectiveSort,
+      order_by: orderBy || sort,
       pagination
     });
   }
@@ -1268,7 +1264,6 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/trades-by-market', {
       market_id: marketId,
       order_by: orderBy,
-      sort: orderBy,
       pagination
     });
   }
@@ -1281,7 +1276,6 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/trades-by-address', {
       address,
       order_by: orderBy,
-      sort: orderBy,
       pagination
     });
   }
@@ -1342,7 +1336,6 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/pnl-by-market', {
       market_id: marketId,
       order_by: orderBy,
-      sort: orderBy,
       pagination
     });
   }
@@ -1355,7 +1348,6 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/pnl-by-address', {
       address,
       order_by: orderBy,
-      sort: orderBy,
       pagination
     });
   }

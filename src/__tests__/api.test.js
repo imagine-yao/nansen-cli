@@ -1957,67 +1957,60 @@ describe('NansenAPI', () => {
     });
 
     describe('order_by parameter', () => {
-      it('should send both order_by and sort for backward compat on pmOhlcv', async () => {
+      it('should pass order_by to pmOhlcv', async () => {
         setupMock(MOCK_RESPONSES.pmOhlcv);
         const orderBy = [{ field: 'volume_usd', direction: 'ASC' }];
         await api.pmOhlcv({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/ohlcv');
         expect(body.order_by).toEqual(orderBy);
-        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should fall back to sort param for pmOhlcv when no orderBy', async () => {
+      it('should fall back to sort param as order_by for pmOhlcv', async () => {
         setupMock(MOCK_RESPONSES.pmOhlcv);
         const sort = [{ field: 'period_start', direction: 'DESC' }];
         await api.pmOhlcv({ marketId: '654412', sort });
         const body = expectFetchCalledWith('/api/v1/prediction-market/ohlcv');
         expect(body.order_by).toEqual(sort);
-        expect(body.sort).toEqual(sort);
       });
 
-      it('should send both order_by and sort for backward compat on pmTopHolders', async () => {
+      it('should pass order_by to pmTopHolders', async () => {
         setupMock(MOCK_RESPONSES.pmTopHolders);
         const orderBy = [{ field: 'position_size', direction: 'ASC' }];
         await api.pmTopHolders({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/top-holders');
         expect(body.order_by).toEqual(orderBy);
-        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should send both order_by and sort on pmTradesByMarket', async () => {
+      it('should pass order_by to pmTradesByMarket', async () => {
         setupMock(MOCK_RESPONSES.pmTradesByMarket);
         const orderBy = [{ field: 'timestamp', direction: 'ASC' }];
         await api.pmTradesByMarket({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/trades-by-market');
         expect(body.order_by).toEqual(orderBy);
-        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should send both order_by and sort on pmTradesByAddress', async () => {
+      it('should pass order_by to pmTradesByAddress', async () => {
         setupMock(MOCK_RESPONSES.pmTradesByAddress);
         const orderBy = [{ field: 'timestamp', direction: 'DESC' }];
         await api.pmTradesByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/trades-by-address');
         expect(body.order_by).toEqual(orderBy);
-        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should send both order_by and sort on pmPnlByMarket', async () => {
+      it('should pass order_by to pmPnlByMarket', async () => {
         setupMock(MOCK_RESPONSES.pmPnlByMarket);
         const orderBy = [{ field: 'total_pnl_usd', direction: 'ASC' }];
         await api.pmPnlByMarket({ marketId: '654412', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/pnl-by-market');
         expect(body.order_by).toEqual(orderBy);
-        expect(body.sort).toEqual(orderBy);
       });
 
-      it('should send both order_by and sort on pmPnlByAddress', async () => {
+      it('should pass order_by to pmPnlByAddress', async () => {
         setupMock(MOCK_RESPONSES.pmPnlByAddress);
         const orderBy = [{ field: 'total_pnl_usd', direction: 'DESC' }];
         await api.pmPnlByAddress({ address: '0x1234567890abcdef1234567890abcdef12345678', orderBy });
         const body = expectFetchCalledWith('/api/v1/prediction-market/pnl-by-address');
         expect(body.order_by).toEqual(orderBy);
-        expect(body.sort).toEqual(orderBy);
       });
     });
 
