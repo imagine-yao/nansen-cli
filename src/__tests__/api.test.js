@@ -1793,13 +1793,14 @@ describe('NansenAPI', () => {
         setupMock(MOCK_RESPONSES.pmMarketScreener);
         const result = await api.pmMarketScreener({});
         const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
+        expect(body.sort_by).toBe('volume_24hr');
         expect(body.query).toBe('');
         expect(body.status).toBe('');
         expect(result.data).toBeInstanceOf(Array);
         expect(result.data[0]).toHaveProperty('question', 'Will X happen?');
       });
 
-      it('should pass sort_by as fallback when no order_by', async () => {
+      it('should pass sort_by, query, and status', async () => {
         setupMock(MOCK_RESPONSES.pmMarketScreener);
         await api.pmMarketScreener({ sortBy: 'liquidity', query: 'election', status: 'active' });
         const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
@@ -1814,13 +1815,14 @@ describe('NansenAPI', () => {
         setupMock(MOCK_RESPONSES.pmEventScreener);
         const result = await api.pmEventScreener({});
         const body = expectFetchCalledWith('/api/v1/prediction-market/event-screener');
+        expect(body.sort_by).toBe('volume_24hr');
         expect(body.query).toBe('');
         expect(body.status).toBe('');
         expect(result.data).toBeInstanceOf(Array);
         expect(result.data[0]).toHaveProperty('event_title', 'US Election');
       });
 
-      it('should pass sort_by as fallback when no order_by', async () => {
+      it('should pass sort_by, query, and status', async () => {
         setupMock(MOCK_RESPONSES.pmEventScreener);
         await api.pmEventScreener({ sortBy: 'open_interest', query: 'crypto', status: 'active' });
         const body = expectFetchCalledWith('/api/v1/prediction-market/event-screener');
@@ -2006,15 +2008,15 @@ describe('NansenAPI', () => {
     });
 
     describe('pmMarketScreener (filters)', () => {
-      it('should pass order_by to screener', async () => {
+      it('should pass order_by alongside sort_by', async () => {
         setupMock(MOCK_RESPONSES.pmMarketScreener);
         await api.pmMarketScreener({ orderBy: [{ field: 'liquidity', direction: 'ASC' }] });
         const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
         expect(body.order_by).toEqual([{ field: 'liquidity', direction: 'ASC' }]);
-        expect(body).not.toHaveProperty('sort_by');
+        expect(body.sort_by).toBe('volume_24hr');
       });
 
-      it('should fall back to sort_by when no order_by', async () => {
+      it('should send sort_by without order_by when no orderBy provided', async () => {
         setupMock(MOCK_RESPONSES.pmMarketScreener);
         await api.pmMarketScreener({ sortBy: 'open_interest' });
         const body = expectFetchCalledWith('/api/v1/prediction-market/market-screener');
@@ -2096,12 +2098,12 @@ describe('NansenAPI', () => {
     });
 
     describe('pmEventScreener (filters)', () => {
-      it('should pass order_by to event screener', async () => {
+      it('should pass order_by alongside sort_by to event screener', async () => {
         setupMock(MOCK_RESPONSES.pmEventScreener);
         await api.pmEventScreener({ orderBy: [{ field: 'volume_24hr', direction: 'ASC' }] });
         const body = expectFetchCalledWith('/api/v1/prediction-market/event-screener');
         expect(body.order_by).toEqual([{ field: 'volume_24hr', direction: 'ASC' }]);
-        expect(body).not.toHaveProperty('sort_by');
+        expect(body.sort_by).toBe('volume_24hr');
       });
 
       it('should pass volume and liquidity filters', async () => {

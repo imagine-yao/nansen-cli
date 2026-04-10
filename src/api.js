@@ -1232,9 +1232,11 @@ export class NansenAPI {
   async pmOhlcv(params = {}) {
     const { marketId, orderBy, sort, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
+    const effectiveSort = orderBy || sort;
     return this.request('/api/v1/prediction-market/ohlcv', {
       market_id: marketId,
-      order_by: orderBy || sort,
+      order_by: effectiveSort,
+      sort: effectiveSort,
       pagination
     });
   }
@@ -1251,9 +1253,11 @@ export class NansenAPI {
   async pmTopHolders(params = {}) {
     const { marketId, orderBy, sort, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
+    const effectiveSort = orderBy || sort;
     return this.request('/api/v1/prediction-market/top-holders', {
       market_id: marketId,
-      order_by: orderBy || sort,
+      order_by: effectiveSort,
+      sort: effectiveSort,
       pagination
     });
   }
@@ -1264,6 +1268,7 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/trades-by-market', {
       market_id: marketId,
       order_by: orderBy,
+      sort: orderBy,
       pagination
     });
   }
@@ -1276,22 +1281,20 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/trades-by-address', {
       address,
       order_by: orderBy,
+      sort: orderBy,
       pagination
     });
   }
 
   async pmMarketScreener(params = {}) {
-    const { orderBy, sortBy, query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination } = params;
+    const { orderBy, sortBy = 'volume_24hr', query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination } = params;
     const body = {
+      sort_by: sortBy,
       query,
       status,
       pagination
     };
-    if (orderBy) {
-      body.order_by = orderBy;
-    } else if (sortBy) {
-      body.sort_by = sortBy;
-    }
+    if (orderBy) body.order_by = orderBy;
     if (tags && tags.length) body.tags = tags;
     if (minLiquidity != null) body.min_liquidity = minLiquidity;
     if (maxLiquidity != null) body.max_liquidity = maxLiquidity;
@@ -1310,17 +1313,14 @@ export class NansenAPI {
   }
 
   async pmEventScreener(params = {}) {
-    const { orderBy, sortBy, query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination } = params;
+    const { orderBy, sortBy = 'volume_24hr', query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination } = params;
     const body = {
+      sort_by: sortBy,
       query,
       status,
       pagination
     };
-    if (orderBy) {
-      body.order_by = orderBy;
-    } else if (sortBy) {
-      body.sort_by = sortBy;
-    }
+    if (orderBy) body.order_by = orderBy;
     if (tags && tags.length) body.tags = tags;
     if (minLiquidity != null) body.min_liquidity = minLiquidity;
     if (maxLiquidity != null) body.max_liquidity = maxLiquidity;
@@ -1342,6 +1342,7 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/pnl-by-market', {
       market_id: marketId,
       order_by: orderBy,
+      sort: orderBy,
       pagination
     });
   }
@@ -1354,6 +1355,7 @@ export class NansenAPI {
     return this.request('/api/v1/prediction-market/pnl-by-address', {
       address,
       order_by: orderBy,
+      sort: orderBy,
       pagination
     });
   }
