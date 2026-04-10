@@ -1230,11 +1230,11 @@ export class NansenAPI {
   // ============= Prediction Market Endpoints =============
 
   async pmOhlcv(params = {}) {
-    const { marketId, sort, pagination } = params;
+    const { marketId, orderBy, sort, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
     return this.request('/api/v1/prediction-market/ohlcv', {
       market_id: marketId,
-      sort,
+      order_by: orderBy || sort,
       pagination
     });
   }
@@ -1249,71 +1249,105 @@ export class NansenAPI {
   }
 
   async pmTopHolders(params = {}) {
-    const { marketId, sort, pagination } = params;
+    const { marketId, orderBy, sort, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
     return this.request('/api/v1/prediction-market/top-holders', {
       market_id: marketId,
-      sort,
+      order_by: orderBy || sort,
       pagination
     });
   }
 
   async pmTradesByMarket(params = {}) {
-    const { marketId, pagination } = params;
+    const { marketId, orderBy, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
     return this.request('/api/v1/prediction-market/trades-by-market', {
       market_id: marketId,
+      order_by: orderBy,
       pagination
     });
   }
 
   async pmTradesByAddress(params = {}) {
-    const { address, pagination } = params;
+    const { address, orderBy, pagination } = params;
     // Polymarket runs exclusively on Polygon
     const validation = validateAddress(address, 'polygon');
     if (!validation.valid) throw new NansenError(validation.error, validation.code);
     return this.request('/api/v1/prediction-market/trades-by-address', {
       address,
+      order_by: orderBy,
       pagination
     });
   }
 
   async pmMarketScreener(params = {}) {
-    const { sortBy = 'volume_24hr', query = '', status = '', pagination } = params;
-    return this.request('/api/v1/prediction-market/market-screener', {
+    const { orderBy, sortBy = 'volume_24hr', query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination } = params;
+    const body = {
       sort_by: sortBy,
       query,
       status,
       pagination
-    });
+    };
+    if (orderBy) body.order_by = orderBy;
+    if (tags && tags.length) body.tags = tags;
+    if (minLiquidity != null) body.min_liquidity = minLiquidity;
+    if (maxLiquidity != null) body.max_liquidity = maxLiquidity;
+    if (minUniqueTraders24h != null) body.min_unique_traders_24h = minUniqueTraders24h;
+    if (maxUniqueTraders24h != null) body.max_unique_traders_24h = maxUniqueTraders24h;
+    if (minVolume24hr != null) body.min_volume_24hr = minVolume24hr;
+    if (maxVolume24hr != null) body.max_volume_24hr = maxVolume24hr;
+    if (negRisk != null) body.neg_risk = negRisk;
+    if (minOpenInterest != null) body.min_open_interest = minOpenInterest;
+    if (maxOpenInterest != null) body.max_open_interest = maxOpenInterest;
+    if (endDateBefore) body.end_date_before = endDateBefore;
+    if (endDateAfter) body.end_date_after = endDateAfter;
+    if (minPrice != null) body.min_price = minPrice;
+    if (maxPrice != null) body.max_price = maxPrice;
+    return this.request('/api/v1/prediction-market/market-screener', body);
   }
 
   async pmEventScreener(params = {}) {
-    const { sortBy = 'volume_24hr', query = '', status = '', pagination } = params;
-    return this.request('/api/v1/prediction-market/event-screener', {
+    const { orderBy, sortBy = 'volume_24hr', query = '', status = '', tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination } = params;
+    const body = {
       sort_by: sortBy,
       query,
       status,
       pagination
-    });
+    };
+    if (orderBy) body.order_by = orderBy;
+    if (tags && tags.length) body.tags = tags;
+    if (minLiquidity != null) body.min_liquidity = minLiquidity;
+    if (maxLiquidity != null) body.max_liquidity = maxLiquidity;
+    if (minUniqueTraders24h != null) body.min_unique_traders_24h = minUniqueTraders24h;
+    if (maxUniqueTraders24h != null) body.max_unique_traders_24h = maxUniqueTraders24h;
+    if (minVolume24hr != null) body.min_volume_24hr = minVolume24hr;
+    if (maxVolume24hr != null) body.max_volume_24hr = maxVolume24hr;
+    if (negRisk != null) body.neg_risk = negRisk;
+    if (minOpenInterest != null) body.min_open_interest = minOpenInterest;
+    if (maxOpenInterest != null) body.max_open_interest = maxOpenInterest;
+    if (endDateBefore) body.end_date_before = endDateBefore;
+    if (endDateAfter) body.end_date_after = endDateAfter;
+    return this.request('/api/v1/prediction-market/event-screener', body);
   }
 
   async pmPnlByMarket(params = {}) {
-    const { marketId, pagination } = params;
+    const { marketId, orderBy, pagination } = params;
     if (!marketId) throw new NansenError('market_id is required. Run: nansen research pm market-screener --query "your search"', ErrorCode.MISSING_PARAM);
     return this.request('/api/v1/prediction-market/pnl-by-market', {
       market_id: marketId,
+      order_by: orderBy,
       pagination
     });
   }
 
   async pmPnlByAddress(params = {}) {
-    const { address, pagination } = params;
+    const { address, orderBy, pagination } = params;
     // Polymarket runs exclusively on Polygon
     const validation = validateAddress(address, 'polygon');
     if (!validation.valid) throw new NansenError(validation.error, validation.code);
     return this.request('/api/v1/prediction-market/pnl-by-address', {
       address,
+      order_by: orderBy,
       pagination
     });
   }
@@ -1330,6 +1364,17 @@ export class NansenAPI {
   async pmCategories(params = {}) {
     const { pagination } = params;
     return this.request('/api/v1/prediction-market/categories', {
+      pagination
+    });
+  }
+
+  async pmAddressSummary(params = {}) {
+    const { address, pagination } = params;
+    // Polymarket runs exclusively on Polygon
+    const validation = validateAddress(address, 'polygon');
+    if (!validation.valid) throw new NansenError(validation.error, validation.code);
+    return this.request('/api/v1/prediction-market/address-summary', {
+      address,
       pagination
     });
   }

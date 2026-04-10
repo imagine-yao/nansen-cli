@@ -588,18 +588,42 @@
               "endpoint": "/api/v1/prediction-market/market-screener",
               "description": "Get Prediction Market Screener",
               "options": {
-                "query": {
-                  "default": ""
-                }
+                "query": { "default": "" },
+                "sort-by": { "description": "Deprecated: use --sort field:dir instead" },
+                "tags": {},
+                "min-liquidity": {},
+                "max-liquidity": {},
+                "min-unique-traders-24h": {},
+                "max-unique-traders-24h": {},
+                "min-volume-24hr": {},
+                "max-volume-24hr": {},
+                "neg-risk": {},
+                "min-open-interest": {},
+                "max-open-interest": {},
+                "end-date-before": {},
+                "end-date-after": {},
+                "min-price": {},
+                "max-price": {}
               }
             },
             "event-screener": {
               "endpoint": "/api/v1/prediction-market/event-screener",
               "description": "Get Prediction Market Event Screener",
               "options": {
-                "query": {
-                  "default": ""
-                }
+                "query": { "default": "" },
+                "sort-by": { "description": "Deprecated: use --sort field:dir instead" },
+                "tags": {},
+                "min-liquidity": {},
+                "max-liquidity": {},
+                "min-unique-traders-24h": {},
+                "max-unique-traders-24h": {},
+                "min-volume-24hr": {},
+                "max-volume-24hr": {},
+                "neg-risk": {},
+                "min-open-interest": {},
+                "max-open-interest": {},
+                "end-date-before": {},
+                "end-date-after": {}
               }
             },
             "pnl-by-market": {
@@ -641,6 +665,15 @@
             "categories": {
               "endpoint": "/api/v1/prediction-market/categories",
               "description": "Get Prediction Market Categories"
+            },
+            "address-summary": {
+              "endpoint": "/api/v1/prediction-market/address-summary",
+              "description": "Get wallet-level PnL summary for a Polymarket address",
+              "options": {
+                "address": {
+                  "required": true
+                }
+              }
             }
           },
           "description": "Polymarket prediction market analytics"
