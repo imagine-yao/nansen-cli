@@ -589,8 +589,7 @@
               "description": "Get Prediction Market Screener",
               "options": {
                 "query": { "default": "" },
-                "sort-by": { "description": "Sort field (default: volume_24hr). Use with --sort-direction." },
-                "sort-direction": { "description": "Sort direction: asc or desc (default: desc). Combines with --sort-by into order_by." },
+                "sort-by": { "description": "Deprecated: use --sort field:dir instead" },
                 "tags": {},
                 "min-liquidity": {},
                 "max-liquidity": {},
@@ -612,8 +611,7 @@
               "description": "Get Prediction Market Event Screener",
               "options": {
                 "query": { "default": "" },
-                "sort-by": { "description": "Sort field (default: volume_24hr). Use with --sort-direction." },
-                "sort-direction": { "description": "Sort direction: asc or desc (default: desc). Combines with --sort-by into order_by." },
+                "sort-by": { "description": "Deprecated: use --sort field:dir instead" },
                 "tags": {},
                 "min-liquidity": {},
                 "max-liquidity": {},
