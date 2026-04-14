@@ -45,10 +45,18 @@ nansen research token indicators --token $TOKEN --chain $CHAIN
 # Flow intelligence — only use for promising tokens from screener/indicators above
 nansen research token flow-intelligence --token $TOKEN --chain $CHAIN
 # → net_flow_usd per label: smart_trader, whale, exchange, fresh_wallets, public_figure
+
+# Nansen Score Top Tokens — "what should I buy?" (internal, @nansen.ai only)
+# Use this FIRST for discovery, then drill into individual tokens with `indicators` above
+nansen research token top-tokens --limit 25
+nansen research token top-tokens --market-cap largecap --limit 10
+# → token_symbol, chain, performance_score, risk_score, plus per-indicator contribution fields
 ```
 
 Screener timeframes: `5m`, `10m`, `1h`, `6h`, `24h`, `7d`, `30d`
 
 Indicators: score is "bullish"/"bearish"/"neutral". signal_percentile > 70 = historically significant. Some tokens return empty indicators — not an error.
+
+Top tokens: performance_score >= 15 means buy candidate. risk_score > 0 means safer. Use `--market-cap` to filter by lowcap/midcap/largecap. Then use `indicators` on individual tokens for the full breakdown.
 
 Flow intelligence is credit-heavy. Use it to confirm SM conviction on tokens that already look promising from screener + indicators, not as a first pass on every token.
