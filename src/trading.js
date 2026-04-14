@@ -994,6 +994,16 @@ EXAMPLES:
   nansen trade quote --chain base --from ETH --to USDC --amount 1000000000000000000
   nansen trade quote --chain base --to-chain solana --from USDC --to USDC --amount 1000000
   nansen trade quote --chain solana --to-chain base --from SOL --to ETH --amount 1000000000
+
+CROSS-CHAIN NOTES (when using --to-chain):
+  Supported combos:
+    native → native (ETH <-> SOL) — requires $5+ per trade
+    USDC → USDC (both directions)
+    USDC → native (USDC → ETH or SOL)
+    native → USDC (ETH/SOL → USDC)
+    non-native → non-native — not supported (use USDC as intermediate)
+  Bridge provider: Li.Fi
+  Typical bridge time: 1-5 minutes
 `, 'MISSING_ARGS');
       }
 
@@ -1181,6 +1191,20 @@ EXAMPLES:
           let msg = 'No quotes available';
           if (response.warnings?.length) {
             msg += '\n' + response.warnings.map(w => `  Warning: ${w}`).join('\n');
+          }
+          if (isCrossChain) {
+            // Estimate USD value to detect bridge minimum issues
+            let usdEstimate = null;
+            try {
+              const price = await resolveUsdPrice(apiInstance, from, chain);
+              const decimals = await resolveTokenDecimals(from, chain);
+              usdEstimate = (Number(resolvedAmount) / 10 ** decimals) * price;
+            } catch { /* best-effort */ }
+            if (usdEstimate !== null && usdEstimate < 5) {
+              msg = `Amount too small for cross-chain bridge. Minimum ~$5 required. Your amount: ~$${usdEstimate.toFixed(2)}.`;
+            } else {
+              msg = `No bridge route found for ${fromRaw} → ${toRaw} (${chain} → ${toChainRaw}). Try using USDC as an intermediate token.`;
+            }
           }
           throw new CommandError(msg, 'NO_QUOTES');
         }
