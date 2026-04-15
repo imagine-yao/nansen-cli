@@ -1192,20 +1192,6 @@ CROSS-CHAIN NOTES (when using --to-chain):
           if (response.warnings?.length) {
             msg += '\n' + response.warnings.map(w => `  Warning: ${w}`).join('\n');
           }
-          if (isCrossChain) {
-            // Estimate USD value to detect bridge minimum issues
-            let usdEstimate = null;
-            try {
-              const price = await resolveUsdPrice(apiInstance, from, chain);
-              const decimals = await resolveTokenDecimals(from, chain);
-              usdEstimate = (Number(resolvedAmount) / 10 ** decimals) * price;
-            } catch { /* best-effort */ }
-            if (usdEstimate !== null && usdEstimate < 5) {
-              msg = `Amount too small for cross-chain bridge. Minimum ~$5 required. Your amount: ~$${usdEstimate.toFixed(2)}.`;
-            } else {
-              msg = `No bridge route found for ${fromRaw} → ${toRaw} (${chain} → ${toChainRaw}). Try using USDC as an intermediate token.`;
-            }
-          }
           throw new CommandError(msg, 'NO_QUOTES');
         }
 

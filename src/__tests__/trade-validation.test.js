@@ -211,7 +211,7 @@ describe('validateQuoteInput', () => {
     it('rejects cross-chain WETH → BONK (Base → Solana, neither anchor)', () => {
       expect(() => validateQuoteInput({
         chain: 'base', toChain: 'solana', from: WETH, to: BONK, amount: '1000000000000000000',
-      })).toThrow(/Cross-chain swaps require USDC or a native token/);
+      })).toThrow(/USDC or the native token/);
     });
 
     it('allows mixed-case USDC on Base (case-insensitive anchor recognition)', () => {
