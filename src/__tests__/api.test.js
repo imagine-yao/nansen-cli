@@ -1100,10 +1100,10 @@ describe('NansenAPI', () => {
       it('should fetch top tokens with correct endpoint and body', async () => {
         setupMock(MOCK_RESPONSES.topTokens);
         const result = await api.topTokens({ limit: 10 });
-        const body = expectFetchCalledWith('/api/internal/nansen-score-top-tokens');
+        const body = expectFetchCalledWith('/api/v1/nansen-score/top-tokens');
         if (body) {
           expect(body.limit).toBe(10);
-          expect(body.marketCapGroup).toBeUndefined();
+          expect(body.market_cap_group).toBeUndefined();
         }
         expect(result.tokens).toBeInstanceOf(Array);
       });
@@ -1111,9 +1111,9 @@ describe('NansenAPI', () => {
       it('should pass marketCapGroup when provided', async () => {
         setupMock(MOCK_RESPONSES.topTokens);
         await api.topTokens({ marketCapGroup: 'largecap', limit: 5 });
-        const body = expectFetchCalledWith('/api/internal/nansen-score-top-tokens');
+        const body = expectFetchCalledWith('/api/v1/nansen-score/top-tokens');
         if (body) {
-          expect(body.marketCapGroup).toBe('largecap');
+          expect(body.market_cap_group).toBe('largecap');
           expect(body.limit).toBe(5);
         }
       });
@@ -1121,7 +1121,7 @@ describe('NansenAPI', () => {
       it('should default limit to 25', async () => {
         setupMock(MOCK_RESPONSES.topTokens);
         await api.topTokens({});
-        const body = expectFetchCalledWith('/api/internal/nansen-score-top-tokens');
+        const body = expectFetchCalledWith('/api/v1/nansen-score/top-tokens');
         if (body) {
           expect(body.limit).toBe(25);
         }
