@@ -70,6 +70,25 @@ describe('telemetry', () => {
       const body = JSON.parse(fetchMock.mock.calls[0][1].body);
       expect(body.properties.chain).toBeUndefined();
     });
+
+    it('should map agent commands to path /agent and set agent_prompt', () => {
+      trackCommandSucceeded({
+        command: 'agent What is the trend score for ETH',
+        duration_ms: 100,
+      });
+
+      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(body.path).toBe('/agent');
+      expect(body.properties.agent_prompt).toBe('What is the trend score for ETH');
+    });
+
+    it('should map bare agent to /agent without agent_prompt', () => {
+      trackCommandSucceeded({ command: 'agent', duration_ms: 10 });
+
+      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(body.path).toBe('/agent');
+      expect(body.properties.agent_prompt).toBeUndefined();
+    });
   });
 
   describe('trackCommandFailed', () => {
@@ -89,6 +108,19 @@ describe('telemetry', () => {
       expect(body.path).toBe('/smart-money/netflow');
       expect(body.properties.error_code).toBe('UNAUTHORIZED');
       expect(body.properties.status).toBe(401);
+    });
+
+    it('should map failed agent commands to /agent with agent_prompt', () => {
+      trackCommandFailed({
+        command: 'agent Explain SOL flows',
+        duration_ms: 200,
+        error_code: 'UNAUTHORIZED',
+        status: 401,
+      });
+
+      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(body.path).toBe('/agent');
+      expect(body.properties.agent_prompt).toBe('Explain SOL flows');
     });
   });
 
