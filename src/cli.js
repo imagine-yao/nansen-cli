@@ -1738,12 +1738,7 @@ export async function runCLI(rawArgs, deps = {}) {
 
   // ── Telemetry setup ──
   const startTime = Date.now();
-  const fullCommand =
-    command === 'agent' && subArgs.length > 0
-      ? `agent ${subArgs.join(' ')}`
-      : subcommand
-        ? `${command} ${subcommand}`
-        : command;
+  const fullCommand = subcommand ? `${command} ${subcommand}` : command;
   const flagNames = Object.keys(flags).filter(k => flags[k]).map(k => `--${k}`);
   const optionNames = Object.keys(options).map(k => `--${k}`);
   const usedFlags = [...flagNames, ...optionNames];

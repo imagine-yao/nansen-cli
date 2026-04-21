@@ -167,15 +167,6 @@ function commandToPath(command) {
   return '/' + String(command).replace(/\s+/g, '/');
 }
 
-/** Non-empty prompt text after `agent`, for telemetry properties. */
-function agentPromptProperty(command) {
-  if (typeof command !== 'string') return {};
-  const m = command.trimStart().match(/^agent(?:\s+(.*))?$/);
-  if (!m || m[1] == null) return {};
-  const prompt = m[1].trim();
-  return prompt ? { agent_prompt: prompt } : {};
-}
-
 /**
  * Track a CLI command that completed successfully.
  *
@@ -206,7 +197,6 @@ export function trackCommandSucceeded({
       latency: duration_ms / 1000,
       from_cache,
       flags,
-      ...agentPromptProperty(command),
       ...(chain ? { chain } : {}),
     },
     context: buildContext(),
@@ -246,7 +236,6 @@ export function trackCommandFailed({
       error_code,
       status,
       flags,
-      ...agentPromptProperty(command),
       ...(chain ? { chain } : {}),
     },
     context: buildContext(),
