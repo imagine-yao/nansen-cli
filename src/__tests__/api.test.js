@@ -161,7 +161,7 @@ const MOCK_RESPONSES = {
     ]
   },
   topTokens: {
-    tokens: [
+    data: [
       {
         token_address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
         token_symbol: 'AAVE',
@@ -1105,7 +1105,7 @@ describe('NansenAPI', () => {
           expect(body.limit).toBe(10);
           expect(body.market_cap_group).toBeUndefined();
         }
-        expect(result.tokens).toBeInstanceOf(Array);
+        expect(result.data).toBeInstanceOf(Array);
       });
 
       it('should pass marketCapGroup when provided', async () => {
