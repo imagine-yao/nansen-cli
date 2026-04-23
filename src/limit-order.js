@@ -609,13 +609,18 @@ EXAMPLES:
         let hasVault = false;
         try {
           const vaultInfo = await getVault(token, pubkey);
-          hasVault = !!vaultInfo?.vaultPubkey;
+          hasVault = !!(vaultInfo?.vaultPubkey || vaultInfo?.vaultAddress);
         } catch {
           // No vault found
         }
         if (!hasVault) {
           log('  Registering vault for first-time use...');
-          await registerVault(token);
+          try {
+            await registerVault(token);
+          } catch (regErr) {
+            // Vault may already exist — ignore "already registered" errors
+            if (!/already registered/i.test(regErr.message)) throw regErr;
+          }
         }
 
         // 4. Craft deposit transaction
