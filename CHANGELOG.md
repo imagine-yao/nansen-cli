@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.27.1
+
+### Patch Changes
+
+- [#408](https://github.com/nansen-ai/nansen-cli/pull/408) [`d1e9787`](https://github.com/nansen-ai/nansen-cli/commit/d1e97871b897153a9e1cd587897ff2f4bbed6c88) Thanks [@0xlaveen](https://github.com/0xlaveen)! - Add cross-chain notes to trade help text and document --to-chain constraints in schema.json.
+
 ## 1.27.0
 
 ### Minor Changes
