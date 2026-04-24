@@ -500,6 +500,19 @@
                   "default": true
                 }
               }
+            },
+            "top-tokens": {
+              "endpoint": "/api/v1/nansen-score/top-tokens",
+              "description": "Top tokens ranked by Nansen Score (public endpoint, any authenticated API key)",
+              "options": {
+                "market-cap": {
+                  "description": "Filter by market cap group",
+                  "enum": ["lowcap", "midcap", "largecap"]
+                },
+                "limit": {
+                  "default": 25
+                }
+              }
             }
           },
           "description": "Token God Mode - deep analytics for any token"

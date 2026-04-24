@@ -1277,8 +1277,13 @@ export function buildCommands(deps = {}) {
           const withLabels = resolveBooleanOption(options, flags, 'premium-labels');
           return apiInstance.tokenPerpPnlLeaderboard({ tokenSymbol, filters, orderBy, pagination, days, withLabels });
         },
+        'top-tokens': () => {
+          const marketCapGroup = options['market-cap'] || options['market-cap-group'];
+          const limit = options.limit ? parseInt(options.limit) : undefined;
+          return apiInstance.topTokens({ marketCapGroup, limit });
+        },
         'help': () => ({
-          commands: ['info', 'ohlcv', 'screener', 'holders', 'flows', 'dex-trades', 'pnl', 'who-bought-sold', 'flow-intelligence', 'transfers', 'jup-dca', 'perp-trades', 'perp-positions', 'perp-pnl-leaderboard'],
+          commands: ['info', 'ohlcv', 'screener', 'holders', 'flows', 'dex-trades', 'pnl', 'who-bought-sold', 'flow-intelligence', 'transfers', 'jup-dca', 'perp-trades', 'perp-positions', 'perp-pnl-leaderboard', 'top-tokens'],
           description: 'Token God Mode endpoints',
           example: 'nansen token screener --chain solana --timeframe 24h --smart-money --include-stablecoins false'
         })
