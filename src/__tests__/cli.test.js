@@ -116,6 +116,7 @@ describe('CLI Smoke Tests', () => {
     const { stdout } = runCLI('research token help');
     expect(stdout).toContain('screener');
     expect(stdout).toContain('ohlcv');
+    expect(stdout).toContain('top-tokens');
   });
 
   it('should route research prediction-market commands', () => {
@@ -123,6 +124,7 @@ describe('CLI Smoke Tests', () => {
     expect(stdout).toContain('ohlcv');
     expect(stdout).toContain('market-screener');
     expect(stdout).toContain('categories');
+    expect(stdout).toContain('address-summary');
   });
 
   it('should route top-level pm alias to prediction-market', () => {
@@ -130,6 +132,7 @@ describe('CLI Smoke Tests', () => {
     expect(stdout).toContain('ohlcv');
     expect(stdout).toContain('market-screener');
     expect(stdout).toContain('categories');
+    expect(stdout).toContain('address-summary');
   });
 
   it('should error on pm ohlcv without --market-id', () => {
@@ -150,6 +153,22 @@ describe('CLI Smoke Tests', () => {
 
   it('should error on pm trades-by-address with invalid address', () => {
     const { stdout, stderr, exitCode } = runCLI('research pm trades-by-address --address notanaddress');
+    expect(exitCode).not.toBe(0);
+    const output = stdout || stderr;
+    const json = JSON.parse(output.split('\n').find(l => l.startsWith('{')));
+    expect(json.code).toBe('INVALID_ADDRESS');
+  });
+
+  it('should error on pm address-summary without --address', () => {
+    const { stdout, stderr, exitCode } = runCLI('research pm address-summary');
+    expect(exitCode).not.toBe(0);
+    const output = stdout || stderr;
+    const json = JSON.parse(output.split('\n').find(l => l.startsWith('{')));
+    expect(json.code).toBe('MISSING_PARAM');
+  });
+
+  it('should error on pm address-summary with invalid address', () => {
+    const { stdout, stderr, exitCode } = runCLI('research pm address-summary --address notanaddress');
     expect(exitCode).not.toBe(0);
     const output = stdout || stderr;
     const json = JSON.parse(output.split('\n').find(l => l.startsWith('{')));

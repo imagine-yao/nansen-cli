@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.28.0
+
+### Minor Changes
+
+- [#417](https://github.com/nansen-ai/nansen-cli/pull/417) [`ae6079f`](https://github.com/nansen-ai/nansen-cli/commit/ae6079f12d06d11fe357237b84387fcaffcfd387) Thanks [@0xlaveen](https://github.com/0xlaveen)! - Add `trade limit-order` commands (create, list, cancel, update) for Jupiter Limit Order V2 on Solana. Supports local, Privy, and WalletConnect wallets.
+
+- [#413](https://github.com/nansen-ai/nansen-cli/pull/413) [`94bd349`](https://github.com/nansen-ai/nansen-cli/commit/94bd349bdf9a0a3f3389975144281306eea0e4ca) Thanks [@jake-kennis](https://github.com/jake-kennis)! - Add `top-tokens` subcommand to discover top-scoring tokens by Nansen Score. Calls the public endpoint (`/api/v1/nansen-score/top-tokens`) with optional `--market-cap` filter.
+
+## 1.27.1
+
+### Patch Changes
+
+- [#408](https://github.com/nansen-ai/nansen-cli/pull/408) [`d1e9787`](https://github.com/nansen-ai/nansen-cli/commit/d1e97871b897153a9e1cd587897ff2f4bbed6c88) Thanks [@0xlaveen](https://github.com/0xlaveen)! - Add cross-chain notes to trade help text and document --to-chain constraints in schema.json.
+
+## 1.27.0
+
+### Minor Changes
+
+- [#403](https://github.com/nansen-ai/nansen-cli/pull/403) [`fe53dbe`](https://github.com/nansen-ai/nansen-cli/commit/fe53dbe8cf743b970e145e7ad7a00470f16f28df) Thanks [@marius-reed](https://github.com/marius-reed)! - Add prediction market filtering (order_by, volume/liquidity/OI/trader/price/date filters, neg_risk, tags) and address-summary endpoint
+
+### Patch Changes
+
+- [#402](https://github.com/nansen-ai/nansen-cli/pull/402) [`cfd94ce`](https://github.com/nansen-ai/nansen-cli/commit/cfd94ce1e1880e36fb0c97d0ecfe37e614898006) Thanks [@TimNooren](https://github.com/TimNooren)! - Enforce USDC or native token on one side of every swap
+
 ## 1.26.1
 
 ### Patch Changes

@@ -6,6 +6,7 @@
 import { NansenAPI, NansenError, CommandError, ErrorCode, saveConfig, deleteConfig, getConfigFile, clearCache, getCacheDir, validateAddress, normalizeAddress, sleep } from './api.js';
 import { buildWalletCommands } from './wallet.js';
 import { buildTradingCommands } from './trading.js';
+import { buildLimitOrderCommands } from './limit-order.js';
 import { formatAlertsTable, buildAlertsCommands } from './commands/alerts.js';
 import { buildAgentCommands } from './commands/agent.js';
 import { resolveAddress, isEnsName } from './ens.js';
@@ -1276,8 +1277,13 @@ export function buildCommands(deps = {}) {
           const withLabels = resolveBooleanOption(options, flags, 'premium-labels');
           return apiInstance.tokenPerpPnlLeaderboard({ tokenSymbol, filters, orderBy, pagination, days, withLabels });
         },
+        'top-tokens': () => {
+          const marketCapGroup = options['market-cap'] || options['market-cap-group'];
+          const limit = options.limit ? parseInt(options.limit) : undefined;
+          return apiInstance.topTokens({ marketCapGroup, limit });
+        },
         'help': () => ({
-          commands: ['info', 'ohlcv', 'screener', 'holders', 'flows', 'dex-trades', 'pnl', 'who-bought-sold', 'flow-intelligence', 'transfers', 'jup-dca', 'perp-trades', 'perp-positions', 'perp-pnl-leaderboard'],
+          commands: ['info', 'ohlcv', 'screener', 'holders', 'flows', 'dex-trades', 'pnl', 'who-bought-sold', 'flow-intelligence', 'transfers', 'jup-dca', 'perp-trades', 'perp-positions', 'perp-pnl-leaderboard', 'top-tokens'],
           description: 'Token God Mode endpoints',
           example: 'nansen token screener --chain solana --timeframe 24h --smart-money --include-stablecoins false'
         })
@@ -1407,23 +1413,40 @@ export function buildCommands(deps = {}) {
       const sortBy = options['sort-by'];
       const query = options.query;
       const status = options.status;
-      const sort = parseSort(options.sort);
+      const orderBy = parseSort(options.sort, options['order-by']);
       const pagination = buildPagination(options);
 
+      // Screener-specific filter options
+      const tags = options.tags ? options.tags.split(',').map(t => t.trim()) : undefined;
+      const minLiquidity = options['min-liquidity'] != null ? Number(options['min-liquidity']) : undefined;
+      const maxLiquidity = options['max-liquidity'] != null ? Number(options['max-liquidity']) : undefined;
+      const minUniqueTraders24h = options['min-unique-traders-24h'] != null ? Number(options['min-unique-traders-24h']) : undefined;
+      const maxUniqueTraders24h = options['max-unique-traders-24h'] != null ? Number(options['max-unique-traders-24h']) : undefined;
+      const minVolume24hr = options['min-volume-24hr'] != null ? Number(options['min-volume-24hr']) : undefined;
+      const maxVolume24hr = options['max-volume-24hr'] != null ? Number(options['max-volume-24hr']) : undefined;
+      const negRisk = options['neg-risk'] != null ? options['neg-risk'] === 'true' : undefined;
+      const minOpenInterest = options['min-open-interest'] != null ? Number(options['min-open-interest']) : undefined;
+      const maxOpenInterest = options['max-open-interest'] != null ? Number(options['max-open-interest']) : undefined;
+      const endDateBefore = options['end-date-before'];
+      const endDateAfter = options['end-date-after'];
+      const minPrice = options['min-price'] != null ? Number(options['min-price']) : undefined;
+      const maxPrice = options['max-price'] != null ? Number(options['max-price']) : undefined;
+
       const handlers = {
-        'ohlcv': () => apiInstance.pmOhlcv({ marketId, sort, pagination }),
+        'ohlcv': () => apiInstance.pmOhlcv({ marketId, orderBy, pagination }),
         'orderbook': () => apiInstance.pmOrderbook({ marketId, pagination }),
-        'top-holders': () => apiInstance.pmTopHolders({ marketId, sort, pagination }),
-        'trades-by-market': () => apiInstance.pmTradesByMarket({ marketId, pagination }),
-        'trades-by-address': () => apiInstance.pmTradesByAddress({ address, pagination }),
-        'market-screener': () => apiInstance.pmMarketScreener({ sortBy, query, status, pagination }),
-        'event-screener': () => apiInstance.pmEventScreener({ sortBy, query, status, pagination }),
-        'pnl-by-market': () => apiInstance.pmPnlByMarket({ marketId, pagination }),
-        'pnl-by-address': () => apiInstance.pmPnlByAddress({ address, pagination }),
+        'top-holders': () => apiInstance.pmTopHolders({ marketId, orderBy, pagination }),
+        'trades-by-market': () => apiInstance.pmTradesByMarket({ marketId, orderBy, pagination }),
+        'trades-by-address': () => apiInstance.pmTradesByAddress({ address, orderBy, pagination }),
+        'market-screener': () => apiInstance.pmMarketScreener({ orderBy, sortBy, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, minPrice, maxPrice, pagination }),
+        'event-screener': () => apiInstance.pmEventScreener({ orderBy, sortBy, query, status, tags, minLiquidity, maxLiquidity, minUniqueTraders24h, maxUniqueTraders24h, minVolume24hr, maxVolume24hr, negRisk, minOpenInterest, maxOpenInterest, endDateBefore, endDateAfter, pagination }),
+        'pnl-by-market': () => apiInstance.pmPnlByMarket({ marketId, orderBy, pagination }),
+        'pnl-by-address': () => apiInstance.pmPnlByAddress({ address, orderBy, pagination }),
         'position-detail': () => apiInstance.pmPositionDetail({ marketId, pagination }),
         'categories': () => apiInstance.pmCategories({ pagination }),
+        'address-summary': () => apiInstance.pmAddressSummary({ address, pagination }),
         'help': () => ({
-          commands: ['ohlcv', 'orderbook', 'top-holders', 'trades-by-market', 'trades-by-address', 'market-screener', 'event-screener', 'pnl-by-market', 'pnl-by-address', 'position-detail', 'categories'],
+          commands: ['ohlcv', 'orderbook', 'top-holders', 'trades-by-market', 'trades-by-address', 'market-screener', 'event-screener', 'pnl-by-market', 'pnl-by-address', 'position-detail', 'categories', 'address-summary'],
           description: 'Polymarket prediction market analytics',
           example: 'nansen research pm market-screener --sort-by volume_24hr --limit 20'
         })
@@ -1457,8 +1480,9 @@ export function buildCommands(deps = {}) {
     return cmds[category](args.slice(1), apiInstance, flags, options);
   };
 
-  // 'trade' delegates to quote/execute from buildTradingCommands
+  // 'trade' delegates to quote/execute from buildTradingCommands and limit-order from buildLimitOrderCommands
   const tradingCmds = buildTradingCommands(deps);
+  const limitOrderCmds = buildLimitOrderCommands(deps);
   cmds['trade'] = async (args, apiInstance, flags, options) => {
     const sub = args[0];
     if (!sub || sub === 'help') {
@@ -1468,12 +1492,14 @@ SUBCOMMANDS:
   quote          Get a swap quote (price, route, fees)
   execute        Sign and broadcast a quoted swap
   bridge-status  Check cross-chain bridge transaction status
+  limit-order    Limit order management (Solana only)
 
 USAGE:
   nansen trade quote --chain <chain> --from <token> --to <token> --amount <units> [--wallet <name>]
   nansen trade quote --chain <chain> --to-chain <chain> --from <token> --to <token> --amount <units>
   nansen trade execute --quote <quoteId> [--wallet <name>]
   nansen trade bridge-status --tx-hash <hash> --from-chain <chain> --to-chain <chain>
+  nansen trade limit-order <create|list|cancel|update> [options]
 
 EXAMPLES:
   nansen trade quote --chain solana --from SOL --to USDC --amount 1000000000
@@ -1481,18 +1507,53 @@ EXAMPLES:
   nansen trade quote --chain base --to-chain solana --from USDC --to USDC --amount 1000000
   nansen trade execute --quote 1708900000000-abc123
   nansen trade bridge-status --tx-hash 0xabc... --from-chain base --to-chain solana
+  nansen trade limit-order create --from SOL --to USDC --amount 1000000000 --trigger-mint SOL --trigger-condition below --trigger-price 80
+  nansen trade limit-order list
 
 WALLET:
-  --wallet <name>   Use a named wallet, or "walletconnect" / "wc" for WalletConnect (EVM only).
+  --wallet <name>   Use a named wallet, or "walletconnect" / "wc" for WalletConnect.
                     Defaults to the default local wallet if omitted.
 
 SYMBOLS:
   Common tokens resolve automatically: SOL, ETH, USDC, USDT, WETH
-  Raw addresses are also accepted.`);
+  Raw addresses are also accepted.
+
+CROSS-CHAIN NOTES (when using --to-chain):
+  Supported combos:
+    native → native (ETH <-> SOL) — requires $5+ per trade
+    USDC → USDC (both directions)
+    USDC → native (USDC → ETH or SOL)
+    native → USDC (ETH/SOL → USDC)
+    non-native → non-native — not supported (use USDC as intermediate)
+  Bridge provider: Li.Fi
+  Typical bridge time: 1-5 minutes`);
       return;
     }
+    if (sub === 'limit-order') {
+      const loSub = args[1];
+      if (!loSub || loSub === 'help') {
+        log(`nansen trade limit-order — Limit order commands (Solana only)
+
+SUBCOMMANDS:
+  create    Place a new limit order
+  list      List your limit orders
+  cancel    Cancel an open order
+  update    Update trigger price or slippage
+
+USAGE:
+  nansen trade limit-order create --from <token> --to <token> --amount <units> --trigger-mint <token> --trigger-condition <above|below> --trigger-price <usd>
+  nansen trade limit-order list [--state <active|past>]
+  nansen trade limit-order cancel --order <orderId>
+  nansen trade limit-order update --order <orderId> --trigger-price <usd>`);
+        return;
+      }
+      if (!limitOrderCmds[loSub]) {
+        throw new NansenError(`Unknown limit-order subcommand: ${loSub}. Available: create, list, cancel, update`, ErrorCode.UNKNOWN);
+      }
+      return limitOrderCmds[loSub](args.slice(2), apiInstance, flags, options);
+    }
     if (!tradingCmds[sub]) {
-      throw new NansenError(`Unknown trade subcommand: ${sub}. Available: quote, execute, bridge-status`, ErrorCode.UNKNOWN);
+      throw new NansenError(`Unknown trade subcommand: ${sub}. Available: quote, execute, bridge-status, limit-order`, ErrorCode.UNKNOWN);
     }
     return tradingCmds[sub](args.slice(1), apiInstance, flags, options);
   };

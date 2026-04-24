@@ -994,6 +994,16 @@ EXAMPLES:
   nansen trade quote --chain base --from ETH --to USDC --amount 1000000000000000000
   nansen trade quote --chain base --to-chain solana --from USDC --to USDC --amount 1000000
   nansen trade quote --chain solana --to-chain base --from SOL --to ETH --amount 1000000000
+
+CROSS-CHAIN NOTES (when using --to-chain):
+  Supported combos:
+    native → native (ETH <-> SOL) — requires $5+ per trade
+    USDC → USDC (both directions)
+    USDC → native (USDC → ETH or SOL)
+    native → USDC (ETH/SOL → USDC)
+    non-native → non-native — not supported (use USDC as intermediate)
+  Bridge provider: Li.Fi
+  Typical bridge time: 1-5 minutes
 `, 'MISSING_ARGS');
       }
 
@@ -1157,6 +1167,10 @@ EXAMPLES:
         };
         if (isCrossChain) {
           params.toChainIndex = toChainConfig.index;
+          // Opt out of Relay aggregator: CLI bypasses backend /execute so the
+          // Redis aggregator hint is never set, and /bridge/status defaults to
+          // LiFi — polling a Relay txHash there returns NOT_FOUND.
+          params.disabledAggregators = 'relay';
           if (toWallet) {
             params.toWalletAddress = toWallet;
             log(`  Destination wallet: ${toWallet}`);
